@@ -112,7 +112,7 @@ public static class Core {
         ec.Logger.AddNode("&9Copy");
         if (!Tools.CheckParamLength(args,1,ec)) return null;
         string src = args[1];
-        bool isOverwrite = false;
+        bool isOverwrite = true;
         string? ignoreRegex = null;
         if (args.Length > 3) {
             if (!Tools.TryGetSub(["true","false"],args,3,ec)) return null;
@@ -153,7 +153,7 @@ public static class Core {
                 if (!Directory.Exists(destDirectory)) {
                     Directory.CreateDirectory(destDirectory!);
                 }
-                File.Copy(file,destPath,true);
+                File.Copy(file,destPath,isOverwrite);
             }
         } else if (File.Exists(src)) {
             if (ignoreRegex != null) {
@@ -167,7 +167,15 @@ public static class Core {
             if (args.Length > 2) {
                 dest = args[2];
             }
-            File.Copy(src,dest,true);
+            try {
+                File.Copy(src,dest,true);
+            } catch(Exception e) {
+                if (e.HResult == -2147024816) {
+                    ec.Logger.WriteLine($"&7跳过存在的&8[&7{src}&8]",Terminal.MessageType.Debug);
+                } else {
+                    ec.Logger.WriteLine(e.Message,Terminal.MessageType.Error);
+                }
+            }
         } else {
             ec.Logger.WriteLine("&c无效的路径",Terminal.MessageType.Error);
         }
@@ -239,7 +247,7 @@ public static class Core {
         if (!Tools.CheckParamLength(args,2,ec)) return null;
         string src = args[1];
         string dest = args[2];
-        bool isOverwrite = false;
+        bool isOverwrite = true;
         string? ignoreRegex = null;
         if (args.Length > 3) {
             if (!Tools.TryGetSub(["true","false"],args,3,ec)) return null;
@@ -272,7 +280,16 @@ public static class Core {
                 if (!Directory.Exists(dest)) {
                     Directory.CreateDirectory(dest);
                 }
-                File.Copy(file,Path.Combine(dest,Path.GetFileName(file)),isOverwrite);
+                try {
+                    File.Copy(file,Path.Combine(dest,Path.GetFileName(file)),isOverwrite);
+                }
+                catch(Exception e) {
+                    if (e.HResult == -2147024816) {
+                        ec.Logger.WriteLine($"&7跳过存在的&8[&7{src}&8]",Terminal.MessageType.Debug);
+                    } else {
+                        ec.Logger.WriteLine(e.Message,Terminal.MessageType.Error);
+                    }
+                }
             }
         } else {
             ec.Logger.WriteLine("&c无效的目录",Terminal.MessageType.Error);
