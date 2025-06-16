@@ -11,10 +11,17 @@ static class Program {
             InitProject();
         }
         if (!File.Exists(StaticContext.Paths.LocalConfig)) {
-            InitLocalConfig();
+            if (args.Length > 0) {
+                Context.LocalConfig = new LocalConfig() {
+                    TerminalMode = "legacy"
+                };
+            } else {
+                InitLocalConfig();
+                Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));
+            }
+        } else {
+            Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));
         }
-        
-        Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));
         
         Terminal.Init(Context.LocalConfig!.TerminalMode switch {
             "modern" => new AnsiTerminal(),
@@ -48,6 +55,7 @@ static class Program {
                 Terminal.WriteLine("",$"&c未能解析这个启动参数&8[&4{args[0]}&8]",Terminal.MessageType.Critical);
             }
         } else {
+            
             InteractLoop();
         }
     }
