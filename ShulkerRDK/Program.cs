@@ -15,6 +15,7 @@ static class Program {
                 Context.LocalConfig = new LocalConfig() {
                     TerminalMode = "legacy"
                 };
+                NugetHelper.IsProgressBarEnabled = false;
             } else {
                 InitLocalConfig();
                 Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));

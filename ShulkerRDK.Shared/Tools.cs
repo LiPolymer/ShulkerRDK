@@ -245,6 +245,7 @@ public static partial class Tools {
 }
 
 public static class NugetHelper {
+    public static bool IsProgressBarEnabled { get; set; } = true;
     public static void DependencyVerify(string packageIdentifier,string libTarget = "net8.0",bool extractRuntime = true,string[]? checkFiles = null) {
         try {
             checkFiles ??= [packageIdentifier.Split('/')[0] + ".dll"];
@@ -266,7 +267,7 @@ public static class NugetHelper {
             const string cache = "./shulker/local/cache/";
             string pkgCache = $"{cache}{packageIdentifier.Split('/')[0]}.nupkg";
             string extCache = $"{cache}{packageIdentifier.Split('/')[0]}/";
-            FileDownloader.DownloadFile($"https://www.nuget.org/api/v2/package/{packageIdentifier}",pkgCache);
+            FileDownloader.DownloadFile($"https://www.nuget.org/api/v2/package/{packageIdentifier}",pkgCache,IsProgressBarEnabled);
             if (Directory.Exists(extCache)) {
                 Directory.Delete(extCache,true);
             }
@@ -316,7 +317,7 @@ public static class NugetHelper {
 }
 
 public static class FileDownloader {
-    public static void DownloadFile(string fileUrl,string destinationPath) {
+    public static void DownloadFile(string fileUrl,string destinationPath,bool progBar = true) {
         try {
             if (!Directory.Exists(Path.GetDirectoryName(destinationPath))) {
                 Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
@@ -350,14 +351,14 @@ public static class FileDownloader {
                 // 更新进度（每100ms或当进度变化超过1%时更新）
                 if (!canReportProgress || (stopwatch.ElapsedMilliseconds <= 100 &&
                                            (bytesReceived * 100 / totalBytes) == lastPercentage)) continue;
-                UpdateProgressBar(bytesReceived,totalBytes);
+                UpdateProgressBar(bytesReceived,totalBytes,!progBar);
                 lastPercentage = (int)(bytesReceived * 100 / totalBytes);
                 stopwatch.Restart();
             }
 
             // 下载完成后显示完整进度条
             if (canReportProgress) {
-                UpdateProgressBar(totalBytes,totalBytes);
+                UpdateProgressBar(totalBytes,totalBytes,!progBar);
                 Terminal.Write("&e完成!&r");
                 Console.WriteLine();
             } else {
@@ -375,7 +376,8 @@ public static class FileDownloader {
         }
     }
 
-    static void UpdateProgressBar(long bytesReceived,long totalBytes) {
+    static void UpdateProgressBar(long bytesReceived,long totalBytes,bool bypass = false) {
+        if (bypass) return;
         const int progressBarLength = 50;
         double progress = (double)bytesReceived / totalBytes;
         int filledBlocks = (int)(progress * progressBarLength);
