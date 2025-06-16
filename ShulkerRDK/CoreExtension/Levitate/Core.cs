@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO.MemoryMappedFiles;
 using System.Text.RegularExpressions;
 using ShulkerRDK.Shared;
 
@@ -228,6 +229,53 @@ public static class Core {
                 }
             }
             ec.Logger.WriteLine($"&cShell&8>>&r执行完成! 耗时&8[&7{(p.ExitTime - p.StartTime).TotalMilliseconds}&8]&7ms");
+        }
+        return null;
+    }
+    
+    public static string? Flatten(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&9&oFlatten");
+        if (!Tools.CheckParamLength(args,1,ec)) return null;
+        if (!Tools.CheckParamLength(args,2,ec)) return null;
+        string src = args[1];
+        string dest = args[2];
+        bool isOverwrite = false;
+        string? ignoreRegex = null;
+        if (args.Length > 3) {
+            if (!Tools.TryGetSub(["true","false"],args,3,ec)) return null;
+            isOverwrite = args[3] switch {
+                "true" => true,
+                "false" => false,
+                _ => isOverwrite
+            };
+            if (args.Length > 4) {
+                ignoreRegex = args[4];
+            }
+        }
+        if (Directory.Exists(src)) {
+            ec.Logger.WriteLine($"&7正在平整&8[&7{src}&8]>[&7{dest}&8]");
+            string[] files = Directory.GetFiles(src,"*",SearchOption.AllDirectories);
+            foreach (string file in files) {
+                if (ignoreRegex != null) {
+                    try {
+                        if (new Regex(ignoreRegex).IsMatch(file)) {
+                            ec.Logger.WriteLine($"&7忽略&8[&7{file}&8]",Terminal.MessageType.Debug);
+                            continue;
+                        }
+                    }
+                    catch (Exception e) {
+                        ec.Logger.WriteLine($"&c解析表达式时遇到问题&8[&7{e.Message}&8]");
+                        return null;
+                    }
+                }
+                ec.Logger.WriteLine($"&7正在复制&8[&7{Path.GetFileName(file)}&8]",Terminal.MessageType.Debug);
+                if (!Directory.Exists(dest)) {
+                    Directory.CreateDirectory(dest);
+                }
+                File.Copy(file,Path.Combine(dest,Path.GetFileName(file)),isOverwrite);
+            }
+        } else {
+            ec.Logger.WriteLine("&c无效的目录",Terminal.MessageType.Error);
         }
         return null;
     }

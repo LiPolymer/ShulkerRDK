@@ -25,6 +25,7 @@ public class Extension : IShulkerExtension {
         LevitateMethods.Add("copy",Levitate.Core.Copy);
         LevitateMethods.Add("delete",Levitate.Core.Delete);
         LevitateMethods.Add("sh",Levitate.Core.Shell);
+        LevitateMethods.Add("flat",Levitate.Core.Flatten);
         //独立
         LevitateMethods.Add("pkgr",Levitate.Packager.Method);
         
