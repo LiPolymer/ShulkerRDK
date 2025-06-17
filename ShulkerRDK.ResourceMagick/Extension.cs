@@ -1,4 +1,4 @@
-﻿using ImageMagick;
+﻿using ShulkerRDK.ResourceMagick.Command;
 using ShulkerRDK.ResourceMagick.Levitate;
 using ShulkerRDK.Shared;
 
@@ -16,6 +16,8 @@ public class Extension : IShulkerExtension {
             "|Magick.Native-Q16-x64.dll.dylib|Magick.Native-Q16-arm64.dll.dylib"
         ]);
         #endif
+        Commands.Add("png2psd",Formatter.Command);
+        
         LevitateMethods.Add("psdcvt",PsdConverter.Method);
         LevitateMethods.Add("pbrex",PbrExtractor.Method);
         
