@@ -17,7 +17,10 @@ public class Extension : IShulkerExtension {
         ]);
         #endif
         LevitateMethods.Add("psdcvt",PsdConverter.Method);
-        LevitateAliases.Add("^psdCvt$", "psdcvt %project.src% %project.cache%");
+        LevitateMethods.Add("pbrex",PbrExtractor.Method);
+        
+        LevitateAliases.Add("^psdCvt$", "psdcvt \"%project.src%\" \"%project.cache%\"");
+        LevitateAliases.Add("^pbrEx$", "pbrex \"%project.src%\" \"%project.cache%\"");
     }
     
     public string Id { get => "shulker.magick"; }
