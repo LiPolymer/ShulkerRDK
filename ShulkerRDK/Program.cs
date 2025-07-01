@@ -45,11 +45,19 @@ static class Program {
         };
         
         LoadExtensions(Context);
-        Terminal.WriteLine("&l&bExtension",$"完成!&8[&7{Context.Extensions.Count - 1}&8]&r个扩展已载入!");
+        Terminal.WriteLine("&l&bExtension",$"完成!&8[&7{Context.Extensions.Count - 1}&8]&r个外置扩展已载入!");
         ActiveExtensions();
         Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
         if (args.Length > 0) {
+            foreach (string arg in args) {
+                Console.Write(arg + " ");
+            }
+            Console.WriteLine();
             args = Tools.AliasResolver(args,Context.StartActionAliases);
+            foreach (string arg in args) {
+                Console.Write(arg + " ");
+            }
+            Console.WriteLine();
             if (Context.StartActions.TryGetValue(args[0],out Action<string[],ShulkerContext>? action)) {
                 action(args,Context);
             } else {

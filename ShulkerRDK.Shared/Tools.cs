@@ -31,6 +31,7 @@ public static partial class Tools {
         foreach (KeyValuePair<string,string> alias in aliases) {
             Regex regex = new Regex(alias.Key);
             if (regex.IsMatch(original)) {
+                Terminal.WriteLine("AliasResolver",$"[Resolver]PatternMatched{alias.Key}",Terminal.MessageType.Debug);
                 return regex.Replace(original,alias.Value);
             }
         }
@@ -38,20 +39,18 @@ public static partial class Tools {
     }
 
     public static string[] AliasResolver(string[] original,Dictionary<string,string> aliases) {
-        foreach (KeyValuePair<string,string> alias in aliases) {
-            string partAsm = string.Empty;
-            int index = 0;
-            foreach (string part in original) {
-                partAsm += " " + part;
-                partAsm = partAsm.Trim();
-                string resolvedAsm = AliasResolver(part,aliases);
-                if (resolvedAsm != partAsm) {
-                    List<string> parts = ResolveArgs(resolvedAsm).ToList();
-                    parts.AddRange(GetSubGroup(original,index + 1));
-                    return parts.ToArray();
-                }
-                index++;
+        string partAsm = string.Empty;
+        int index = 0;
+        foreach (string part in original) {
+            partAsm += " " + part;
+            partAsm = partAsm.Trim();
+            string resolvedAsm = AliasResolver(partAsm,aliases);
+            if (resolvedAsm != partAsm) {
+                List<string> parts = ResolveArgs(resolvedAsm).ToList();
+                parts.AddRange(GetSubGroup(original,index + 1));
+                return parts.ToArray();
             }
+            index++;
         }
         return original;
     }
