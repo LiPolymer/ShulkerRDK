@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
 namespace ShulkerRDK.Shared;
@@ -53,7 +52,12 @@ public static class Terminal {
     }
 }
 
-public class ChainedTerminal {
+public interface IChainedLikeTerminal {
+    public void WriteLine(string content,Terminal.MessageType type = Terminal.MessageType.Info);
+    public void AddNode(string node);
+}
+
+public class ChainedTerminal : IChainedLikeTerminal {
     readonly List<string> _unitChain;
     public ChainedTerminal(string firstNode) {
         _unitChain = [firstNode];

@@ -43,6 +43,7 @@ public class Extension : IShulkerExtension {
         CommandAliases.Add("^build","task build ");
         CommandAliases.Add("^publish","task publish ");
         CommandAliases.Add("^run","task run ");
+        CommandAliases.Add("^dev","task dev ");
         
         //Levitate方法
         LevitateAliases.Add("^makeCleanup$","delete \"%project.cache%\"");

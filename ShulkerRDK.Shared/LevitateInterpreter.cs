@@ -9,7 +9,7 @@ public class LevitateInterpreter {
         _envVars.Add("project.src",shulkerContext.ProjectConfig!.RootPath);
         _envVars.Add("project.name",shulkerContext.ProjectConfig!.ProjectName);
         _envVars.Add("project.output",shulkerContext.ProjectConfig!.OutPath);
-        _envVars.Add("project.cache","./shulker/local/cache/build/");
+        _envVars.Add("project.cache","./shulker/local/cache/build");
         foreach (KeyValuePair<string,string> kvp in shulkerContext.ProjectConfig!.DefaultEnvVars) {
             if (_envVars.ContainsKey(kvp.Key)) {
                 Terminal.WriteLine("&9&oLevitate",$"自动环境变量&8[&7{kvp.Key}&8]&r被项目环境变量覆写");
@@ -93,7 +93,7 @@ public class LevitateExecutionContext {
 
 public delegate string? LevitateMethod(string[] line,LevitateExecutionContext ec);
 
-public class LevitateLogger(int index,string name) {
+public class LevitateLogger(int index,string name) : IChainedLikeTerminal {
     readonly ChainedTerminal _instance = new ChainedTerminal($"&6{name}&8[&7{index}&8]");
 
     public void WriteLine(string content,Terminal.MessageType type = Terminal.MessageType.Info) {

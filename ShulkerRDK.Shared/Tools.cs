@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
-using System.Drawing;
 using System.IO.Compression;
 using System.Net;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -137,7 +135,7 @@ public static partial class Tools {
 
         return result;
     }
-
+    
     // 尝试/检查 获取/执行
     public static bool TryRunSub(Dictionary<string,LevitateMethod> collection,string[] args,int depth,LevitateExecutionContext ec) {
         return TryRunSub(collection,args,depth,ec,out _);
@@ -170,14 +168,9 @@ public static partial class Tools {
         return null;
     }
     public static bool TryGetSub(List<string> collection,string[] args,int depth,LevitateExecutionContext ec) {
-        if (!CheckParamLength(args,depth,ec)) return false;
-        if (collection.Contains(args[depth])) {
-            return true;
-        }
-        DisplayUnknownParam(args,depth,ec);
-        return false;
+        return TryGetSub(collection,args,depth,ec.Logger);
     }
-    public static bool TryGetSub(List<string> collection,string[] args,int depth,ChainedTerminal ct) {
+    public static bool TryGetSub(List<string> collection,string[] args,int depth,IChainedLikeTerminal ct) {
         if (!CheckParamLength(args,depth,ct)) return false;
         if (collection.Contains(args[depth])) {
             return true;
@@ -196,16 +189,12 @@ public static partial class Tools {
         }
         return null;
     }
-
-    public static bool CheckParamLength(string[] args,int depth,LevitateExecutionContext? ec = null) {
-        if (args.Length >= depth + 1) return true;
-        if (ec != null) {
-            DisplayMissingParam(args,depth,ec);
-        }
-        return false;
+    
+    public static bool CheckParamLength(string[] args,int depth,LevitateExecutionContext? ec) {
+        return CheckParamLength(args,depth,ec?.Logger);
     }
 
-    public static bool CheckParamLength(string[] args,int depth,ChainedTerminal? ct = null) {
+    public static bool CheckParamLength(string[] args,int depth,IChainedLikeTerminal? ct = null) {
         if (args.Length >= depth + 1) return true;
         if (ct != null) {
             DisplayMissingParam(args,depth,ct);
@@ -213,12 +202,7 @@ public static partial class Tools {
         return false;
     }
 
-    static void DisplayMissingParam(string[] args,int depth,LevitateExecutionContext ec) {
-        List<string> argList = args.ToList();
-        argList.Add("_");
-        ec.Logger.WriteLine($"缺少参数&8[{HighLightParam(argList.ToArray(),depth)}&8]",Terminal.MessageType.Error);
-    }
-    static void DisplayMissingParam(string[] args,int depth,ChainedTerminal ct) {
+    static void DisplayMissingParam(string[] args,int depth,IChainedLikeTerminal ct) {
         List<string> argList = args.ToList();
         argList.Add("_");
         ct.WriteLine($"缺少参数&8[{HighLightParam(argList.ToArray(),depth)}&8]",Terminal.MessageType.Error);
@@ -227,7 +211,7 @@ public static partial class Tools {
     static void DisplayUnknownParam(string[] args,int depth,LevitateExecutionContext ec) {
         ec.Logger.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
     }
-    static void DisplayUnknownParam(string[] args,int depth,ChainedTerminal ct) {
+    static void DisplayUnknownParam(string[] args,int depth,IChainedLikeTerminal ct) {
         ct.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
     }
 

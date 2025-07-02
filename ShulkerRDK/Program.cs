@@ -148,7 +148,7 @@ static class Program {
             if (!typeof(IShulkerExtension).IsAssignableFrom(type)) continue;
             return (Activator.CreateInstance(type) as IShulkerExtension)!;
         }
-        throw new Exception($"未能作为扩展加载程序集");
+        throw new Exception("未能作为扩展加载程序集");
     }
     static void LoadExtensions(ShulkerContext context, string extensionsPath = "./shulker/extensions") {
         if (!Directory.Exists(extensionsPath)) {
@@ -161,6 +161,7 @@ static class Program {
         #if DEBUG
         fileList.Add(@"..\..\..\..\TestExtension\bin\Debug\net8.0\TestExtension.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.ResourceMagick\bin\Debug\net8.0\ShulkerRDK.ResourceMagick.dll");
+        fileList.Add(@"..\..\..\..\ShulkerRDK.Modrinth\bin\Debug\net8.0\ShulkerRDK.Modrinth.dll");
         #endif
         
         files = fileList.ToArray();
