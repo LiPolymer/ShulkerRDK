@@ -9,7 +9,8 @@ public class Manager {
     static readonly Manager Instance = new Manager();
     readonly ModrinthClient _client = new ModrinthClient();
     public static string? Method(string[] args,LevitateExecutionContext ec) {
-        IChainedLikeTerminal ct = ec.Logger;
+        LevitateLogger ct = ec.Logger;
+        ct.AddNode("&aModrinth");
         bool destroySource = true;
         if (!Tools.TryGetSub(["r","s"],args,1,ct)) return null;
         if (!Tools.CheckParamLength(args,2,ct)) return null;
@@ -45,16 +46,19 @@ public class Manager {
                 Instance.Serialize(from,to,ct,destroySource);
                 break;
             case "clean":
-                Cleanup();
+                Cleanup(ct);
                 break;
         }
     }
 
-    static void Cleanup() {
+    static void Cleanup(IChainedLikeTerminal? ct = null) {
+        ct?.WriteLine("正在清理缓存文件...");
         if (Directory.Exists(LocalPath)) Directory.Delete(LocalPath,true);
+        ct?.WriteLine("完成!");
     }
     void Serialize(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
         string[] files = Directory.GetFiles(input,"*",SearchOption.AllDirectories);
+        ct?.WriteLine($"正在编入[{input}]");
         Dictionary<string,List<string>> reverseMap = [];
         foreach (string file in files) {
             string sha1 = Utils.GetSha1(file);
@@ -66,6 +70,7 @@ public class Manager {
                 reverseMap.Add(sha1,[file]);
             }
         }
+        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{reverseMap.Count}]个文件");
         Task<IDictionary<string,Version>> task = _client.VersionFile.GetMultipleVersionsByHashAsync(reverseMap.Keys.ToArray());
         task.Wait();
         foreach (KeyValuePair<string,Version> rawResult in task.Result) {
@@ -83,9 +88,11 @@ public class Manager {
                 if (destroySource) File.Delete(target);
             }
         }
+        ct?.WriteLine("完成!");
     }
     void Restore(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
         string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
+        ct?.WriteLine($"正在复原[{input}]");
         foreach (string file in files) {
             string relativePath = Path.GetRelativePath(input,file);
             string destPath = Path.Combine(output,relativePath);
@@ -93,6 +100,7 @@ public class Manager {
             ManagedFileExport(file,destPath,true,ct);
             if (destroySource) File.Delete(file);
         }
+        ct?.WriteLine("完成!");
     }
 
     const string LocalPath = "./shulker/local/mrf/";
@@ -106,7 +114,7 @@ public class Manager {
         if (!Directory.Exists(Path.GetDirectoryName(output))) Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(input))!;
         if (File.Exists(output) & !overwrite) return;
-        ct?.WriteLine($"正在补全&8V_&7{mrf.VersionId}&8[{mrf.Sha1}]");
+        ct?.WriteLine($"正在补全&8V_&7{mrf.VersionId}&8[{mrf.Sha1}]",Terminal.MessageType.Debug);
         if (!File.Exists(Path.Combine(LocalPath,mrf.Sha1))) {
             Task<Version> getTask = _client.Version.GetAsync(mrf.VersionId);
             getTask.Wait();
