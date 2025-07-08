@@ -120,7 +120,7 @@ public class Manager {
             getTask.Wait();
             foreach (global::Modrinth.Models.File file in getTask.Result.Files) {
                 if (file.Hashes.Sha1 != mrf.Sha1) continue;
-                ct?.WriteLine($"正在下载&8P_&7{getTask.Result.ProjectId}&8@V_&7{getTask.Result.Id}&8(&7{getTask.Result.VersionNumber}&8)");
+                ct?.WriteLine($"正在下载&8P_&7{getTask.Result.ProjectId}&8@V_&7{getTask.Result.Id}&8(&7{getTask.Result.Name}&8)");
                 FileDownloader.DownloadFile(file.Url,Path.Combine(LocalPath,mrf.Sha1));
                 break;
             }
