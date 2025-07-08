@@ -4,7 +4,18 @@ namespace ShulkerRDK.RRT;
 
 public static class ProjectWatcher {
     public static void Command(string[] args,ShulkerContext sc) {
-        if (!Tools.TryGetSub(["start","stop"],args,1,Ct)) return;
+        Transition(args,sc,Ct);
+    }
+
+    public static string? Method(string[] args, LevitateExecutionContext ec) {
+        ec.Logger.AddNode("RRT");
+        ec.Logger.AddNode("PW");
+        Transition(args,ec.ShulkerContext,ec.Logger);
+        return null;
+    }
+
+    static void Transition(string[] args,ShulkerContext sc, IChainedLikeTerminal ct) {
+        if (!Tools.TryGetSub(["start","stop"],args,1,ct)) return;
         string target = sc.ProjectConfig!.RootPath;
         string filter = "*";
         if (Tools.CheckParamLength(args,2)) {
@@ -15,10 +26,10 @@ public static class ProjectWatcher {
         }
         switch (args[1]) {
             case "start":
-                StartWatching(target,filter);
+                StartWatching(target,filter,ct);
                 break;
             case "stop":
-                StopWatching();
+                StopWatching(ct);
                 break;
         }
     }
@@ -28,7 +39,7 @@ public static class ProjectWatcher {
     static FileSystemWatcher? _watcher;
     public static ShulkerContext? Context { private get; set; }
 
-    static void StartWatching(string folderPath, string filter = "*.*") {
+    static void StartWatching(string folderPath, string filter = "*.*", IChainedLikeTerminal? ct = null) {
         StopWatching();
         _watcher = new FileSystemWatcher {
             Path = folderPath,
@@ -49,7 +60,7 @@ public static class ProjectWatcher {
         _watcher.Renamed += OnChangeCaptured;
         
         _watcher.EnableRaisingEvents = true;
-        Ct.WriteLine($"开始监视&8[&7{folderPath}&8]");
+        ct?.WriteLine($"开始监视&8[&7{folderPath}&8]");
     }
 
     static void OnFileChanged(object sender,FileSystemEventArgs e) {
@@ -97,7 +108,9 @@ public static class ProjectWatcher {
         TriggerState = false;
     }
 
-    static void StopWatching() {
+    static void StopWatching(IChainedLikeTerminal? ct = null) {
+        if (_watcher == null) return;
+        ct?.WriteLine("正在停止监视...");
         _watcher?.Dispose();
         _watcher = null;
     }

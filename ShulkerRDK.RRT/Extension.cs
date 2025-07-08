@@ -6,6 +6,7 @@ namespace ShulkerRDK.RRT;
 public class Extension : IShulkerExtension {
     public Extension() {
         LevitateMethods.Add("rrt",TriggerReload.Method);
+        LevitateMethods.Add("pw",ProjectWatcher.Method);
         Commands.Add("pw",ProjectWatcher.Command);
     }
     public string Id { get => "shulker.rrt"; }
