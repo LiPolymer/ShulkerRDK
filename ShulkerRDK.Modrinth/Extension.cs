@@ -10,13 +10,7 @@ public class Extension : IShulkerExtension {
         #if !DEBUG
         NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
         #endif
-
-        Commands.Add("mrt",(_,_)=> {
-            Manager.Instance.Indexer("./shulker/mrpack.template.json"
-                                    ,"./src"
-                                    ,"./out.index.json",
-                                    new ChainedTerminal("DEBUGGER"));
-        });
+        
         Commands.Add("mrp",Manager.Command);
         LevitateMethods.Add("mrp",Manager.Method);
     }

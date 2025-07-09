@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Text.Json;
 using Modrinth;
 using Modrinth.Models;
 using Modrinth.Models.Enums;
@@ -16,12 +17,15 @@ public class Manager {
         LevitateLogger ct = ec.Logger;
         ct.AddNode("&aModrinth");
         bool destroySource = true;
-        if (!Tools.TryGetSub(["r","s"],args,1,ct)) return null;
+        if (!Tools.TryGetSub(["r","s","e"],args,1,ct)) return null;
         if (!Tools.CheckParamLength(args,2,ct)) return null;
         string to = args[2];
         if (Tools.CheckParamLength(args,3)) {
             to = args[3];
             destroySource = false;
+        } else if (args[1] == "e") {
+            destroySource = false;
+            if (!Tools.CheckParamLength(args,3,ct)) return null;
         }
         if (Tools.CheckParamLength(args,4)) {
             if (args[4] == "true") {
@@ -48,6 +52,9 @@ public class Manager {
                 break;
             case "s":
                 Instance.Serialize(from,to,ct,destroySource);
+                break;
+            case "e":
+                Instance.Indexer("./shulker/mrpack.template.json",from,to,ct,destroySource);
                 break;
             case "clean":
                 Cleanup(ct);
@@ -144,15 +151,16 @@ public class Manager {
         }
         
         string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
-        ct?.WriteLine($"正在编制mrpack索引[{input}]");
+        ct?.WriteLine($"正在编制mrpack索引&8[&7{input}&8]");
         Dictionary<string,string> map = [];
         foreach (string file in files) {
             string destPath = Path.GetRelativePath(input,file)[..^4];
             MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
             ct?.WriteLine($"创建表项&8[&7{destPath}&8]&7>>&8[&7{mrf.Sha1}&8]",Terminal.MessageType.Debug);
             map.Add(destPath,mrf.Sha1);
+            if (destroySource) File.Delete(file);
         }
-        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{map.Count}]个文件");
+        ct?.WriteLine($"正在向Modrinth请求版本信息... &o&8[{map.Count}]个文件");
         Task<IDictionary<string,Version>> verTask = _client.VersionFile.GetMultipleVersionsByHashAsync(map.Values.Distinct().ToArray());
         verTask.Wait();
         IDictionary<string,Version> verResult = verTask.Result;
@@ -162,7 +170,7 @@ public class Manager {
             if (versions.Contains(pair.Value.ProjectId)) continue;
             versions.Add(pair.Value.ProjectId);
         }
-        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{versions.Count}]个项目");
+        ct?.WriteLine($"正在向Modrinth请求项目信息... &o&8[{versions.Count}]个项目");
         Task<Project[]> projTask = _client.Project.GetMultipleAsync(versions.ToArray());
         projTask.Wait();
         Dictionary<string,Project> projResult = [];
@@ -189,7 +197,7 @@ public class Manager {
                     Sha512 = file.Hashes.Sha512
                 },
                 Envs = new MrPack.FileObject.EnvTable {
-                    Client = SideToStringConverter(projResult[mrVer.ProjectId].ClientSide),
+                    Client = SidesMerger(projResult[mrVer.ProjectId].ServerSide,projResult[mrVer.ProjectId].ClientSide),
                     Server = SideToStringConverter(projResult[mrVer.ProjectId].ServerSide)
                 },
                 Downloads = [file.Url],
@@ -199,7 +207,7 @@ public class Manager {
         
         ct?.WriteLine($"{mrpack.Files.Count} Objs Parsed",Terminal.MessageType.Debug);
         mrpack.Export(output);
-        ct?.WriteLine("&a完成!");
+        ct?.WriteLine("&a索引编制完成!");
     }
 
     static string SideToStringConverter(Side side) {
@@ -207,8 +215,18 @@ public class Manager {
             Side.Required => "required",
             Side.Optional => "optional",
             Side.Unsupported => "unsupported",
-            Side.Unknown => "unknown",
+            Side.Unknown => "required",
             _ => throw new ArgumentOutOfRangeException(nameof(side),side,null)
+        };
+    }
+
+    static string SidesMerger(Side serverSide,Side clientSide) {
+        return clientSide switch {
+            Side.Required => "required",
+            Side.Optional => "optional",
+            Side.Unsupported => SideToStringConverter(serverSide),
+            Side.Unknown => "required",
+            _ => throw new ArgumentOutOfRangeException(nameof(clientSide),clientSide,null)
         };
     }
 }
