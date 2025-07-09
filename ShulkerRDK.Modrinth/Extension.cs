@@ -11,12 +11,11 @@ public class Extension : IShulkerExtension {
         NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
         #endif
 
-        Commands.Add("mrGet",(_,_)=> {
-            ModrinthClient mrClient = new ModrinthClient();
-            Task<Version> getTask = mrClient.VersionFile.GetVersionByHashAsync(Utils.GetSha1("./test.jar"));
-            getTask.Wait();
-            Version version = getTask.Result;
-            Terminal.WriteLine("&aModrinth",$"{version.Name} &8{version.ProjectId}@{version.VersionNumber}");
+        Commands.Add("mrt",(_,_)=> {
+            Manager.Instance.Indexer("./shulker/mrpack.template.json"
+                                    ,"./src"
+                                    ,"./out.index.json",
+                                    new ChainedTerminal("DEBUGGER"));
         });
         Commands.Add("mrp",Manager.Command);
         LevitateMethods.Add("mrp",Manager.Method);
@@ -33,6 +32,8 @@ public class Extension : IShulkerExtension {
     public Dictionary<string,string> CommandAliases { get; } = [];
     public Dictionary<string,string> StartActionAliases { get; } = [];
     public Dictionary<string,string> LevitateAliases { get; } = [];
-    public void Init(ShulkerContext context) { }
+    public void Init(ShulkerContext context) {
+        Manager.Context = context;
+    }
     public void Shutdown(ShulkerContext context) { }
 }

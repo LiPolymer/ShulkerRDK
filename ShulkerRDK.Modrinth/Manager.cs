@@ -1,12 +1,16 @@
 ﻿using System.Text.Json;
 using Modrinth;
+using Modrinth.Models;
+using Modrinth.Models.Enums;
 using ShulkerRDK.Shared;
+using File = System.IO.File;
 using Version = Modrinth.Models.Version;
 
 namespace ShulkerRDK.Modrinth;
 
 public class Manager {
-    static readonly Manager Instance = new Manager();
+    public static readonly Manager Instance = new Manager();
+    public static ShulkerContext? Context;
     readonly ModrinthClient _client = new ModrinthClient();
     public static string? Method(string[] args,LevitateExecutionContext ec) {
         LevitateLogger ct = ec.Logger;
@@ -126,5 +130,85 @@ public class Manager {
             }
         }
         File.Copy(Path.Combine(LocalPath,mrf.Sha1),output,overwrite);
+    }
+    public void Indexer(string basement,string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
+        if (!File.Exists(basement)) {
+            new MrPack {
+                Dependencies = [],
+                VersionId = "0.0.0",
+                Name = Context!.ProjectConfig!.ProjectName,
+                Description = "ShulkerRDK Generated Basement Template"
+            }.Export(basement);
+            ct?.WriteLine("<UNK>");
+            return;
+        }
+        
+        string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
+        ct?.WriteLine($"正在编制mrpack索引[{input}]");
+        Dictionary<string,string> map = [];
+        foreach (string file in files) {
+            string destPath = Path.GetRelativePath(input,file)[..^4];
+            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
+            ct?.WriteLine($"创建表项&8[&7{destPath}&8]&7>>&8[&7{mrf.Sha1}&8]",Terminal.MessageType.Debug);
+            map.Add(destPath,mrf.Sha1);
+        }
+        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{map.Count}]个文件");
+        Task<IDictionary<string,Version>> verTask = _client.VersionFile.GetMultipleVersionsByHashAsync(map.Values.Distinct().ToArray());
+        verTask.Wait();
+        IDictionary<string,Version> verResult = verTask.Result;
+        
+        List<string> versions = [];
+        foreach (KeyValuePair<string,Version> pair in verResult) {
+            if (versions.Contains(pair.Value.ProjectId)) continue;
+            versions.Add(pair.Value.ProjectId);
+        }
+        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{versions.Count}]个项目");
+        Task<Project[]> projTask = _client.Project.GetMultipleAsync(versions.ToArray());
+        projTask.Wait();
+        Dictionary<string,Project> projResult = [];
+        foreach (Project p in projTask.Result) {
+            projResult.Add(p.Id,p);
+        }
+        
+        MrPack mrpack = MrPack.Load(basement);
+        foreach (KeyValuePair<string,string> t in map) {
+            Version mrVer = verResult[t.Value];
+            global::Modrinth.Models.File? file = null;
+            foreach (global::Modrinth.Models.File f in mrVer.Files) {
+                if (f.Hashes.Sha1 != t.Value) continue;
+                file = f;
+            }
+            if (file == null) {
+                ct?.WriteLine("<UNK>",Terminal.MessageType.Error);
+                continue;
+            }
+            mrpack.Files.Add(new MrPack.FileObject {
+                Path = t.Key.Replace('\\','/'),
+                Hashes = new MrPack.FileObject.HashesTable {
+                    Sha1 = file.Hashes.Sha1,
+                    Sha512 = file.Hashes.Sha512
+                },
+                Envs = new MrPack.FileObject.EnvTable {
+                    Client = SideToStringConverter(projResult[mrVer.ProjectId].ClientSide),
+                    Server = SideToStringConverter(projResult[mrVer.ProjectId].ServerSide)
+                },
+                Downloads = [file.Url],
+                FileSize = file.Size
+            });
+        }
+        
+        ct?.WriteLine($"{mrpack.Files.Count} Objs Parsed",Terminal.MessageType.Debug);
+        mrpack.Export(output);
+        ct?.WriteLine("&a完成!");
+    }
+
+    static string SideToStringConverter(Side side) {
+        return side switch {
+            Side.Required => "required",
+            Side.Optional => "optional",
+            Side.Unsupported => "unsupported",
+            Side.Unknown => "unknown",
+            _ => throw new ArgumentOutOfRangeException(nameof(side),side,null)
+        };
     }
 }
