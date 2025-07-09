@@ -8,8 +8,8 @@ public static class ProjectWatcher {
     }
 
     public static string? Method(string[] args, LevitateExecutionContext ec) {
-        ec.Logger.AddNode("RRT");
-        ec.Logger.AddNode("PW");
+        ec.Logger.AddNode("&9RRT");
+        ec.Logger.AddNode("&b&oPW");
         Transition(args,ec.ShulkerContext,ec.Logger);
         return null;
     }
@@ -34,7 +34,7 @@ public static class ProjectWatcher {
         }
     }
     
-    static readonly ChainedTerminal Ct = new ChainedTerminal("RRT").Chain("PW");
+    static readonly ChainedTerminal Ct = new ChainedTerminal("&9RRT").Chain("&b&oPW");
     
     static FileSystemWatcher? _watcher;
     public static ShulkerContext? Context { private get; set; }
@@ -110,7 +110,7 @@ public static class ProjectWatcher {
 
     static void StopWatching(IChainedLikeTerminal? ct = null) {
         if (_watcher == null) return;
-        ct?.WriteLine("正在停止监视...");
+        ct?.WriteLine("停止监视...");
         _watcher?.Dispose();
         _watcher = null;
     }

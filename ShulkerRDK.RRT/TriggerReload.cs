@@ -4,7 +4,7 @@ namespace ShulkerRDK.RRT;
 
 public static class TriggerReload {
     public static string? Method(string[] args,LevitateExecutionContext ec) {
-        ec.Logger.AddNode("RRT");
+        ec.Logger.AddNode("&9RRT");
         if (!Tools.CheckParamLength(args,1)) return null;
         if (!Directory.Exists(args[1])) {
             ec.Logger.WriteLine("&7无效的目录",Terminal.MessageType.Error);
