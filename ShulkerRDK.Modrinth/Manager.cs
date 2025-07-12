@@ -213,7 +213,8 @@ public class Manager {
     static string SideToStringConverter(Side side) {
         return side switch {
             Side.Required => "required",
-            Side.Optional => "optional",
+            //Side.Optional => "optional",
+            Side.Optional => "required",
             Side.Unsupported => "unsupported",
             Side.Unknown => "required",
             _ => throw new ArgumentOutOfRangeException(nameof(side),side,null)
@@ -223,7 +224,8 @@ public class Manager {
     static string SidesMerger(Side serverSide,Side clientSide) {
         return clientSide switch {
             Side.Required => "required",
-            Side.Optional => "optional",
+            //Side.Optional => "optional",
+            Side.Optional => "required",
             Side.Unsupported => SideToStringConverter(serverSide),
             Side.Unknown => "required",
             _ => throw new ArgumentOutOfRangeException(nameof(clientSide),clientSide,null)
