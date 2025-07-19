@@ -93,7 +93,7 @@ public class Manager {
                 destPath = $"{destPath}.mrf";
                 Tools.WriteAllText(destPath,JsonSerializer.Serialize(new MrHostedFile {
                     Sha1 = rawResult.Key,
-                    VersionId = rawResult.Value.Id,
+                    VersionId = rawResult.Value.Id
                 },Tools.JsonSerializerOptions));
                 ManagedFileImport(target,rawResult.Key);
                 if (destroySource) File.Delete(target);
@@ -149,22 +149,24 @@ public class Manager {
             ct?.WriteLine("<UNK>");
             return;
         }
-        
+
         string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
         ct?.WriteLine($"正在编制mrpack索引&8[&7{input}&8]");
         Dictionary<string,string> map = [];
+        Dictionary<string,MrHostedFile> mrfMap = [];
         foreach (string file in files) {
             string destPath = Path.GetRelativePath(input,file)[..^4];
             MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
             ct?.WriteLine($"创建表项&8[&7{destPath}&8]&7>>&8[&7{mrf.Sha1}&8]",Terminal.MessageType.Debug);
             map.Add(destPath,mrf.Sha1);
+            mrfMap.Add(mrf.Sha1,mrf);
             if (destroySource) File.Delete(file);
         }
         ct?.WriteLine($"正在向Modrinth请求版本信息... &o&8[{map.Count}]个文件");
         Task<IDictionary<string,Version>> verTask = _client.VersionFile.GetMultipleVersionsByHashAsync(map.Values.Distinct().ToArray());
         verTask.Wait();
         IDictionary<string,Version> verResult = verTask.Result;
-        
+
         List<string> versions = [];
         foreach (KeyValuePair<string,Version> pair in verResult) {
             if (versions.Contains(pair.Value.ProjectId)) continue;
@@ -177,7 +179,7 @@ public class Manager {
         foreach (Project p in projTask.Result) {
             projResult.Add(p.Id,p);
         }
-        
+
         MrPack mrpack = MrPack.Load(basement);
         foreach (KeyValuePair<string,string> t in map) {
             Version mrVer = verResult[t.Value];
@@ -187,34 +189,40 @@ public class Manager {
                 file = f;
             }
             if (file == null) {
-                ct?.WriteLine("<UNK>",Terminal.MessageType.Error);
+                ct?.WriteLine("未找到对应文件",Terminal.MessageType.Error);
                 continue;
             }
+            MrPack.FileObject.EnvTable env = new MrPack.FileObject.EnvTable {
+                Client = mrfMap[file.Hashes.Sha1].ClientSide switch {
+                    null => SidesMerger(projResult[mrVer.ProjectId].ServerSide,projResult[mrVer.ProjectId].ClientSide),
+                    _ => SideToStringConverter(mrfMap[file.Hashes.Sha1].ClientSide!.Value,false)
+                },
+                Server = mrfMap[file.Hashes.Sha1].ServerSide switch {
+                    null => SideToStringConverter(projResult[mrVer.ProjectId].ServerSide),
+                    _ => SideToStringConverter(mrfMap[file.Hashes.Sha1].ServerSide!.Value,false)
+                }
+            };
             mrpack.Files.Add(new MrPack.FileObject {
                 Path = t.Key.Replace('\\','/'),
                 Hashes = new MrPack.FileObject.HashesTable {
                     Sha1 = file.Hashes.Sha1,
                     Sha512 = file.Hashes.Sha512
                 },
-                Envs = new MrPack.FileObject.EnvTable {
-                    Client = SidesMerger(projResult[mrVer.ProjectId].ServerSide,projResult[mrVer.ProjectId].ClientSide),
-                    Server = SideToStringConverter(projResult[mrVer.ProjectId].ServerSide)
-                },
+                Envs = env,
                 Downloads = [file.Url],
                 FileSize = file.Size
             });
         }
-        
+
         ct?.WriteLine($"{mrpack.Files.Count} Objs Parsed",Terminal.MessageType.Debug);
         mrpack.Export(output);
         ct?.WriteLine("&a索引编制完成!");
     }
 
-    static string SideToStringConverter(Side side) {
+    static string SideToStringConverter(Side side, bool isMandatoryMode = true) {
         return side switch {
             Side.Required => "required",
-            //Side.Optional => "optional",
-            Side.Optional => "required",
+            Side.Optional => isMandatoryMode ? "required" :  "optional",
             Side.Unsupported => "unsupported",
             Side.Unknown => "required",
             _ => throw new ArgumentOutOfRangeException(nameof(side),side,null)
@@ -224,7 +232,6 @@ public class Manager {
     static string SidesMerger(Side serverSide,Side clientSide) {
         return clientSide switch {
             Side.Required => "required",
-            //Side.Optional => "optional",
             Side.Optional => "required",
             Side.Unsupported => SideToStringConverter(serverSide),
             Side.Unknown => "required",
