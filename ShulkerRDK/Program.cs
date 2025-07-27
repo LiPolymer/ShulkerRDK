@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text.Json;
+using ShulkerRDK.CoreExtension;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK;
@@ -30,7 +31,7 @@ static class Program {
             "mono" => new MonoTerminal(),
             _ => throw new ArgumentOutOfRangeException($"未知的终端实现类型[{Context.LocalConfig!.TerminalMode}]")
         });
-        
+        Terminal.WriteLine(Extension.AsciiArtStatic);
         Terminal.WriteLine("[&l&5Shulker&6RDK&r] &7Dev   &8正在启动");
         Context.ProjectConfig = ProjectConfig.Load();
         Terminal.WriteLine("&l&3Core",$"&3当前项目&8[&b{Context.ProjectConfig!.ProjectName}&8]");
@@ -49,22 +50,13 @@ static class Program {
         ActiveExtensions();
         Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
         if (args.Length > 0) {
-            foreach (string arg in args) {
-                Console.Write(arg + " ");
-            }
-            Console.WriteLine();
             args = Tools.AliasResolver(args,Context.StartActionAliases);
-            foreach (string arg in args) {
-                Console.Write(arg + " ");
-            }
-            Console.WriteLine();
             if (Context.StartActions.TryGetValue(args[0],out Action<string[],ShulkerContext>? action)) {
                 action(args,Context);
             } else {
                 Terminal.WriteLine("",$"&c未能解析这个启动参数&8[&4{args[0]}&8]",Terminal.MessageType.Critical);
             }
         } else {
-            
             InteractLoop();
         }
     }

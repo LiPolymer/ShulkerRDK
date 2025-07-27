@@ -16,10 +16,14 @@ public class Extension : IShulkerExtension {
     }
     public string Id { get => "shulker.modrinth"; }
     public string Name { get => "ModrinthPSK"; }
-    public string Description { get => "添加Modrinth支持"; }
+    public string Description { get => "添加Modrinth平台支持"; }
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev.Inf"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string AsciiArt { get => """
+                                    &a|V| _  _| __ o __ _|_|_ 
+                                    &a| |(_)(_| |  | | | |_| | &ePSK
+                                    """; }
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
     public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
     public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];

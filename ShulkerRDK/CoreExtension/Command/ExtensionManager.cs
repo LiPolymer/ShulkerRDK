@@ -34,6 +34,12 @@ public static class ExtensionManager {
         }
         if (Program.Context.Extensions.TryGetValue(args[2],out IShulkerExtension? extension)) {
             _myTerminal!.WriteLine($"&6{extension.Name}&8@{extension.Version}");
+            if (extension.AsciiArt != null) {
+                string[] lines = extension.AsciiArt.Split("\n");
+                foreach (string line in lines) {
+                    Terminal.WriteLine("",$" {line}");
+                }
+            }
             Terminal.WriteLine("",$" &6ID  &8[&e{extension.Id}&8]");
             Terminal.WriteLine("",$" &6描述&8[&e{extension.Description}&8]");
             Terminal.WriteLine("",$" &6作者&8[&e{extension.Author}&8]");

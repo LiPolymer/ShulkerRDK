@@ -15,6 +15,12 @@ public class Extension : IShulkerExtension {
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string? AsciiArt { get => """
+                                     &9 _______ __           __ __               &b ______ ______ _______ 
+                                     &9|     __|  |--.--.--.|  |  |--.-----.----.&b|   __ \   __ \_     _|
+                                     &9|__     |     |  |  ||  |    <|  -__|   _|&b|      <      < |   |  
+                                     &9|_______|__|__|_____||__|__|__|_____|__|  &b|___|__|___|__| |___|  
+                                     """; }
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
     public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
     public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];

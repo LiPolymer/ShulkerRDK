@@ -57,7 +57,15 @@ public class Extension : IShulkerExtension {
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string AsciiArt { get => AsciiArtStatic; }
 
+    public static string AsciiArtStatic { get => "&l" + """
+                                                         &5 _____ _       _ _          &6 _____ ____  _____ 
+                                                         &5|   __| |_ _ _| | |_ ___ ___&6| __  |    \|  |  |
+                                                         &5|__   |   | | | | '_| -_|  _&6|    -|  |  |    -|
+                                                         &5|_____|_|_|___|_|_,_|___|_| &6|__|__|____/|__|__|
+                                                         """ + "&r";}
+    
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
     public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
     public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];

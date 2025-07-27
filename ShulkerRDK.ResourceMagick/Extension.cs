@@ -27,10 +27,17 @@ public class Extension : IShulkerExtension {
     
     public string Id { get => "shulker.magick"; }
     public string Name { get => "ResourceMagick"; }
-    public string Description { get => "Image Magick tool for ShulkerRDK"; }
+    public string Description { get => "用于 ShulkerRDK 的 Image Magick 集成"; }
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string? AsciiArt { get => """
+                                     &b _  _      _____&d _      ____  _____ _  ____ _  __
+                                     &b/ \/ \__/|/  __/&d/ \__/|/  _ \/  __// \/   _Y |/ /
+                                     &b| || |\/||| |  _&d| |\/||| / \|| |  _| ||  / |   / 
+                                     &b| || |  ||| |_//&d| |  ||| |-||| |_//| ||  \_|   \ 
+                                     &b\_/\_/  \|\____\&d\_/  \|\_/ \|\____\\_/\____|_|\_\
+                                     """; }
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
     public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
     public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];
