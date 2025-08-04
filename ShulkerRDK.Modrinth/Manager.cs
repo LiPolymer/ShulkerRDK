@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Modrinth;
 using Modrinth.Models;
 using Modrinth.Models.Enums;
@@ -63,25 +62,25 @@ public class Manager {
     }
 
     static void Cleanup(IChainedLikeTerminal? ct = null) {
-        ct?.WriteLine("正在清理缓存文件...");
+        ct?.WriteLine("&7正在清理缓存文件...");
         if (Directory.Exists(LocalPath)) Directory.Delete(LocalPath,true);
-        ct?.WriteLine("完成!");
+        ct?.WriteLine("&7完成!");
     }
     void Serialize(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
         string[] files = Directory.GetFiles(input,"*",SearchOption.AllDirectories);
-        ct?.WriteLine($"正在编入[{input}]");
+        ct?.WriteLine($"&7正在编入&8[&7{input}&8]");
         Dictionary<string,List<string>> reverseMap = [];
         foreach (string file in files) {
             string sha1 = Utils.GetSha1(file);
             if (reverseMap.TryGetValue(sha1,out List<string>? value)) {
-                ct?.WriteLine($"链接文件&8[&7{file}&8]&7>>&8[&7{sha1}&8]",Terminal.MessageType.Debug);
+                ct?.WriteLine($"&7链接文件&8[&7{file}&8]&7>>&8[&7{sha1}&8]",Terminal.MessageType.Debug);
                 value.Add(file);
             } else {
-                ct?.WriteLine($"创建表项&8[&7{file}&8]&7>>&8[&7{sha1}&8]",Terminal.MessageType.Debug);
+                ct?.WriteLine($"&7创建表项&8[&7{file}&8]&7>>&8[&7{sha1}&8]",Terminal.MessageType.Debug);
                 reverseMap.Add(sha1,[file]);
             }
         }
-        ct?.WriteLine($"正在与Modrinth通讯... &o&8[{reverseMap.Count}]个文件");
+        ct?.WriteLine($"&7正在与Modrinth通讯... &o&8[{reverseMap.Count}]个文件");
         Task<IDictionary<string,Version>> task = _client.VersionFile.GetMultipleVersionsByHashAsync(reverseMap.Keys.ToArray());
         task.Wait();
         foreach (KeyValuePair<string,Version> rawResult in task.Result) {
@@ -125,13 +124,13 @@ public class Manager {
         if (!Directory.Exists(Path.GetDirectoryName(output))) Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(input))!;
         if (File.Exists(output) & !overwrite) return;
-        ct?.WriteLine($"正在补全&8V_&7{mrf.VersionId}&8[{mrf.Sha1}]",Terminal.MessageType.Debug);
+        ct?.WriteLine($"&7正在补全 &8V_&7{mrf.VersionId}&8[{mrf.Sha1}]",Terminal.MessageType.Debug);
         if (!File.Exists(Path.Combine(LocalPath,mrf.Sha1))) {
             Task<Version> getTask = _client.Version.GetAsync(mrf.VersionId);
             getTask.Wait();
             foreach (global::Modrinth.Models.File file in getTask.Result.Files) {
                 if (file.Hashes.Sha1 != mrf.Sha1) continue;
-                ct?.WriteLine($"正在下载&8P_&7{getTask.Result.ProjectId}&8@V_&7{getTask.Result.Id}&8(&7{getTask.Result.Name}&8)");
+                ct?.WriteLine($"&7正在下载 &8P_&7{getTask.Result.ProjectId}&8@V_&7{getTask.Result.Id}&8(&7{getTask.Result.Name}&8)");
                 FileDownloader.DownloadFile(file.Url,Path.Combine(LocalPath,mrf.Sha1));
                 break;
             }
@@ -146,23 +145,23 @@ public class Manager {
                 Name = Context!.ProjectConfig!.ProjectName,
                 Description = "ShulkerRDK Generated Basement Template"
             }.Export(basement);
-            ct?.WriteLine("<UNK>");
+            ct?.WriteLine($"&7未找到mrpack元数据基底文件,已自动创建,请打开编辑后再次执行打包&8[&7{basement}&8]",Terminal.MessageType.Error);
             return;
         }
 
         string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
-        ct?.WriteLine($"正在编制mrpack索引&8[&7{input}&8]");
+        ct?.WriteLine($"&7正在编制mrpack索引&8[&7{input}&8]");
         Dictionary<string,string> map = [];
         Dictionary<string,MrHostedFile> mrfMap = [];
         foreach (string file in files) {
             string destPath = Path.GetRelativePath(input,file)[..^4];
             MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
-            ct?.WriteLine($"创建表项&8[&7{destPath}&8]&7>>&8[&7{mrf.Sha1}&8]",Terminal.MessageType.Debug);
+            ct?.WriteLine($"&7创建表项&8[&7{destPath}&8]&7>>&8[&7{mrf.Sha1}&8]",Terminal.MessageType.Debug);
             map.Add(destPath,mrf.Sha1);
             mrfMap.Add(mrf.Sha1,mrf);
             if (destroySource) File.Delete(file);
         }
-        ct?.WriteLine($"正在向Modrinth请求版本信息... &o&8[{map.Count}]个文件");
+        ct?.WriteLine($"&7正在向Modrinth请求版本信息... &o&8[{map.Count}]个文件");
         Task<IDictionary<string,Version>> verTask = _client.VersionFile.GetMultipleVersionsByHashAsync(map.Values.Distinct().ToArray());
         verTask.Wait();
         IDictionary<string,Version> verResult = verTask.Result;
@@ -172,7 +171,7 @@ public class Manager {
             if (versions.Contains(pair.Value.ProjectId)) continue;
             versions.Add(pair.Value.ProjectId);
         }
-        ct?.WriteLine($"正在向Modrinth请求项目信息... &o&8[{versions.Count}]个项目");
+        ct?.WriteLine($"&7正在向Modrinth请求项目信息... &o&8[{versions.Count}]个项目");
         Task<Project[]> projTask = _client.Project.GetMultipleAsync(versions.ToArray());
         projTask.Wait();
         Dictionary<string,Project> projResult = [];
@@ -189,7 +188,7 @@ public class Manager {
                 file = f;
             }
             if (file == null) {
-                ct?.WriteLine("未找到对应文件",Terminal.MessageType.Error);
+                ct?.WriteLine("&c未找到对应文件",Terminal.MessageType.Error);
                 continue;
             }
             MrPack.FileObject.EnvTable env = new MrPack.FileObject.EnvTable {
@@ -214,7 +213,7 @@ public class Manager {
             });
         }
 
-        ct?.WriteLine($"{mrpack.Files.Count} Objs Parsed",Terminal.MessageType.Debug);
+        ct?.WriteLine($"&8 {mrpack.Files.Count} Objs Parsed",Terminal.MessageType.Debug);
         mrpack.Export(output);
         ct?.WriteLine("&a索引编制完成!");
     }

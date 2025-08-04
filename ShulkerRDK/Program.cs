@@ -32,7 +32,7 @@ static class Program {
             _ => throw new ArgumentOutOfRangeException($"未知的终端实现类型[{Context.LocalConfig!.TerminalMode}]")
         });
         Terminal.WriteLine(Extension.AsciiArtStatic);
-        Terminal.WriteLine("[&l&5Shulker&6RDK&r] &7Dev   &8正在启动");
+        Terminal.WriteLine($"[&l&5Shulker&6RDK&r] &7{Extension.VersionStatic}   &8正在启动");
         Context.ProjectConfig = ProjectConfig.Load();
         Terminal.WriteLine("&l&3Core",$"&3当前项目&8[&b{Context.ProjectConfig!.ProjectName}&8]");
         Terminal.WriteLine("&l&3Core","正在载入核心扩展");
@@ -111,6 +111,12 @@ static class Program {
     }
     static void InitLocalConfig() {
         Terminal.WriteLine("","&e您还没有配置本地设置,将引导您进行配置");
+        Terminal.WriteLine("","&c请注意 在继续之前,请确认您信任扩展文件夹内的扩展,它们可以&e以ShulkerRDK的身份&c执行&e任何操作"
+                           ,Terminal.MessageType.Warn);
+        Terminal.WriteLine("","&c继续使用则视为您已确认您信任所有将会加载的扩展,&7ShulkerRDK开发者及贡献者&c将不对您的计算机系统安全负责"
+                           ,Terminal.MessageType.Warn);
+        Terminal.WriteLine("","&7否则请在进行下一步之前使用&8[&7Ctrl&8+&7C&8]&7或其他方法退出"
+                           ,Terminal.MessageType.Warn);
         Terminal.WriteLine("","&7下面将输出一段彩色日志,请检查是否正确显示");
         ConsoleColor defaultColor = Console.ForegroundColor;
         Terminal.Init(new AnsiTerminal());

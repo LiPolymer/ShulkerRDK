@@ -55,7 +55,8 @@ public class Extension : IShulkerExtension {
     public string Name { get => "ShulkerRDK"; }
     public string Description { get => "built-in toolset of ShulkerRDK"; }
     public string Author { get => "LiPolymer"; }
-    public string Version { get => "Dev"; }
+    public string Version { get => VersionStatic; }
+    public static string VersionStatic { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
     public string AsciiArt { get => AsciiArtStatic; }
 

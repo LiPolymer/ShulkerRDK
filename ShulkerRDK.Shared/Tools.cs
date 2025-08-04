@@ -29,7 +29,7 @@ public static partial class Tools {
         foreach (KeyValuePair<string,string> alias in aliases) {
             Regex regex = new Regex(alias.Key);
             if (regex.IsMatch(original)) {
-                Terminal.WriteLine("AliasResolver",$"[Resolver]PatternMatched{alias.Key}",Terminal.MessageType.Debug);
+                Terminal.WriteLine("AliasResolver",$"&7PatternMatched&8[&7{alias.Key}&8]",Terminal.MessageType.Debug);
                 return regex.Replace(original,alias.Value);
             }
         }
@@ -164,7 +164,7 @@ public static partial class Tools {
         if (collection.TryGetValue(args[depth],out LevitateMethod? subM)) {
             return subM;
         }
-        DisplayUnknownParam(args,depth,ec);
+        DisplayUnknownParam(args,depth,ec,collection.Keys.ToList());
         return null;
     }
     public static bool TryGetSub(List<string> collection,string[] args,int depth,LevitateExecutionContext ec) {
@@ -175,7 +175,7 @@ public static partial class Tools {
         if (collection.Contains(args[depth])) {
             return true;
         }
-        DisplayUnknownParam(args,depth,ct);
+        DisplayUnknownParam(args,depth,ct,collection);
         return false;
     }
 
@@ -185,7 +185,7 @@ public static partial class Tools {
             return subA;
         }
         if (ct != null) {
-            DisplayUnknownParam(args,depth,ct);
+            DisplayUnknownParam(args,depth,ct,collection.Keys.ToList());
         }
         return null;
     }
@@ -208,11 +208,13 @@ public static partial class Tools {
         ct.WriteLine($"缺少参数&8[{HighLightParam(argList.ToArray(),depth)}&8]",Terminal.MessageType.Error);
     }
 
-    static void DisplayUnknownParam(string[] args,int depth,LevitateExecutionContext ec) {
-        ec.Logger.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
+    static void DisplayUnknownParam(string[] args,int depth,LevitateExecutionContext ec, List<string>? candidates = null) {
+        ec.Logger.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]", Terminal.MessageType.Error);
+        if (candidates != null) ec.Logger.WriteLine($"&7可用项有&8[&7{string.Join("&8,&7",candidates)}&8]");
     }
-    static void DisplayUnknownParam(string[] args,int depth,IChainedLikeTerminal ct) {
+    static void DisplayUnknownParam(string[] args,int depth,IChainedLikeTerminal ct, List<string>? candidates = null) {
         ct.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
+        if (candidates != null) ct.WriteLine($"&7可用项有&8[&7{string.Join("&8,&7",candidates)}&8]");
     }
 
     static string HighLightParam(string[] args,int depth) {

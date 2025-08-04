@@ -30,10 +30,10 @@ public static class Packager {
         string ingredientPath = args[3];
         string outPath = args[4];
         if (!Directory.Exists(ingredientPath)) {
-            ec.Logger.WriteLine($"目录不存在&8[&c{ingredientPath}&8]");
+            ec.Logger.WriteLine($"&c目录不存在&8[&c{ingredientPath}&8]");
             return null;
         }
-        ec.Logger.WriteLine($"正在创建&8[&7{fileType}&8]&r文件&8[&7{ingredientPath}&8]>&8[&7{outPath}&8]");
+        ec.Logger.WriteLine($"&7正在创建&8[&7{fileType}&8]&7文件&8[&7{ingredientPath}&8]>&8[&7{outPath}&8]");
         string? dir = Path.GetDirectoryName(outPath);
         if (!Directory.Exists(dir) & dir != null & dir != string.Empty) {
             Directory.CreateDirectory(dir!);
@@ -61,10 +61,10 @@ public static class Packager {
         string srcPath = args[3];
         string outPath = args[4];
         if (!File.Exists(srcPath)) {
-            ec.Logger.WriteLine($"档案包不存在&8[&c{srcPath}&8]");
+            ec.Logger.WriteLine($"&c档案包不存在&8[&c{srcPath}&8]");
             return null;
         }
-        ec.Logger.WriteLine($"正在释放&8[&7{srcPath}&8]>&8[&7{outPath}&8]");
+        ec.Logger.WriteLine($"&7正在释放&8[&7{srcPath}&8]>&8[&7{outPath}&8]");
         if (!Directory.Exists(outPath)) {
             Directory.CreateDirectory(outPath);
         }
