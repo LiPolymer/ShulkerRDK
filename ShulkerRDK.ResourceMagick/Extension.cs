@@ -5,7 +5,7 @@ using ShulkerRDK.Shared;
 namespace ShulkerRDK.ResourceMagick;
 
 // ReSharper disable once UnusedType.Global
-public class Extension : IShulkerExtension {
+public class Extension : ExtensionBase {
     public Extension() {
         #if !DEBUG
         NugetHelper.DependencyVerify("Magick.NET.Core/14.7.0");
@@ -25,28 +25,18 @@ public class Extension : IShulkerExtension {
         LevitateAliases.Add("^pbrEx$", "pbrex \"%project.src%\" \"%project.cache%\"");
     }
     
-    public string Id { get => "shulker.magick"; }
-    public string Name { get => "ResourceMagick"; }
-    public string Description { get => "用于 ShulkerRDK 的 Image Magick 集成"; }
-    public string Author { get => "LiPolymer"; }
-    public string Version { get => "Dev"; }
-    public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
-    public string Donating { get => "https://afdian.tv/a/lipolymer"; }
-    public string? Document { get => null; }
-
-    public string? AsciiArt { get => """
-                                     &b _  _      _____&d _      ____  _____ _  ____ _  __
-                                     &b/ \/ \__/|/  __/&d/ \__/|/  _ \/  __// \/   _Y |/ /
-                                     &b| || |\/||| |  _&d| |\/||| / \|| |  _| ||  / |   / 
-                                     &b| || |  ||| |_//&d| |  ||| |-||| |_//| ||  \_|   \ 
-                                     &b\_/\_/  \|\____\&d\_/  \|\_/ \|\____\\_/\____|_|\_\
-                                     """; }
-    public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
-    public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
-    public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];
-    public Dictionary<string,string> CommandAliases { get; } = [];
-    public Dictionary<string,string> StartActionAliases { get; } = [];
-    public Dictionary<string,string> LevitateAliases { get; } = [];
-    public void Init(ShulkerContext context) { }
-    public void Shutdown(ShulkerContext context) { }
+    public override string Id { get => "shulker.magick"; }
+    public override string Name { get => "ResourceMagick"; }
+    public override string Description { get => "用于 ShulkerRDK 的 Image Magick 集成"; }
+    public override string Author { get => "LiPolymer"; }
+    public override string Version { get => "Dev"; }
+    public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public override string AsciiArt { get => """
+                                              &b _  _      _____&d _      ____  _____ _  ____ _  __
+                                              &b/ \/ \__/|/  __/&d/ \__/|/  _ \/  __// \/   _Y |/ /
+                                              &b| || |\/||| |  _&d| |\/||| / \|| |  _| ||  / |   / 
+                                              &b| || |  ||| |_//&d| |  ||| |-||| |_//| ||  \_|   \ 
+                                              &b\_/\_/  \|\____\&d\_/  \|\_/ \|\____\\_/\____|_|\_\
+                                              """; }
 }

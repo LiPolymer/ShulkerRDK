@@ -2,7 +2,7 @@
 
 namespace ShulkerRDK.CoreExtension;
 
-public class Extension : IShulkerExtension {
+public class Extension : ExtensionBase {
     public Extension() {
         ////指令
         //核心
@@ -52,16 +52,15 @@ public class Extension : IShulkerExtension {
         LevitateAliases.Add("^makePkg$","pkgr zip make \"%project.cache%\" \"%project.output%%project.name%.zip\"");
     }
     
-    public string Id { get => "shulker.core"; }
-    public string Name { get => "ShulkerRDK"; }
-    public string Description { get => "built-in toolset of ShulkerRDK"; }
-    public string Author { get => "LiPolymer"; }
-    public string Version { get => VersionStatic; }
+    public override string Id { get => "shulker.core"; }
+    public override string Name { get => "ShulkerRDK"; }
+    public override string Description { get => "built-in toolset of ShulkerRDK"; }
+    public override string Author { get => "LiPolymer"; }
+    public override string Version { get => VersionStatic; }
     public static string VersionStatic { get => "Dev"; }
-    public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
-    public string Donating { get => "https://afdian.tv/a/lipolymer"; }
-    public string? Document { get => null; }
-    public string AsciiArt { get => AsciiArtStatic; }
+    public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public override string AsciiArt { get => AsciiArtStatic; }
 
     public static string AsciiArtStatic { get => "&l" + """
                                                          &5 _____ _       _ _          &6 _____ ____  _____ 
@@ -69,17 +68,4 @@ public class Extension : IShulkerExtension {
                                                          &5|__   |   | | | | '_| -_|  _&6|    -|  |  |    -|
                                                          &5|_____|_|_|___|_|_,_|___|_| &6|__|__|____/|__|__|
                                                          """ + "&r";}
-    
-    public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
-    public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
-    public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];
-    public Dictionary<string,string> CommandAliases { get; } = [];
-    public Dictionary<string,string> StartActionAliases { get; } = [];
-    public Dictionary<string,string> LevitateAliases { get; } = [];
-    public void Init(ShulkerContext context) {
-        
-    }
-    public void Shutdown(ShulkerContext context) {
-        
-    }
 }
