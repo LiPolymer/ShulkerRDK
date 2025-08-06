@@ -172,14 +172,17 @@ public static partial class Tools {
         if (collection.TryGetValue(args[depth],out LevitateMethod? subM)) {
             return subM;
         }
-        DisplayUnknownParam(args,depth,ec,collection.Keys.ToList());
+        DisplayUnknownParam(args,depth,ec);
         return null;
     }
     public static bool TryGetSub(List<string> collection,string[] args,int depth,LevitateExecutionContext ec) {
         return TryGetSub(collection,args,depth,ec.Logger);
     }
     public static bool TryGetSub(List<string> collection,string[] args,int depth,IChainedLikeTerminal ct) {
-        if (!CheckParamLength(args,depth,ct)) return false;
+        if (!CheckParamLength(args,depth,ct)) {
+            DisplayAvailableCandidates(ct,collection);
+            return false;
+        }
         if (collection.Contains(args[depth])) {
             return true;
         }
@@ -218,13 +221,17 @@ public static partial class Tools {
 
     static void DisplayUnknownParam(string[] args,int depth,LevitateExecutionContext ec, List<string>? candidates = null) {
         ec.Logger.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]", Terminal.MessageType.Error);
-        if (candidates != null) ec.Logger.WriteLine($"&7可用项有&8[&7{string.Join("&8,&7",candidates)}&8]");
+        if (candidates != null) DisplayAvailableCandidates(ec.Logger,candidates);
     }
     static void DisplayUnknownParam(string[] args,int depth,IChainedLikeTerminal ct, List<string>? candidates = null) {
         ct.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
-        if (candidates != null) ct.WriteLine($"&7可用项有&8[&7{string.Join("&8,&7",candidates)}&8]");
+        if (candidates != null) DisplayAvailableCandidates(ct,candidates);
     }
 
+    static void DisplayAvailableCandidates(IChainedLikeTerminal ct,List<string> candidates) {
+        ct.WriteLine($"&7可用项有&8[&7{string.Join("&8,&7",candidates)}&8]");
+    }
+    
     static string HighLightParam(string[] args,int depth) {
         string buffer = "&7";
         for (int i = 0; i < args.Length; i++) {

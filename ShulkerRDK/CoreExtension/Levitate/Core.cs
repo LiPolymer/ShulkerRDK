@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO.MemoryMappedFiles;
 using System.Text.RegularExpressions;
 using ShulkerRDK.Shared;
 
@@ -94,7 +93,7 @@ public static class Core {
                     return envVar;
                 }
                 ec.Logger.WriteLine($"未定义的环境变量&8[&c{args[2]}&8]",Terminal.MessageType.Warn);
-                return null;
+                break;
             case "set":
                 if (ec.EnvVars.TryGetValue(args[2],out string? _)) {
                     ec.Logger.WriteLine($"已将环境变量&8[&7{args[2]}&8]修改为&8[&7{args[3]}&8]");
@@ -103,7 +102,7 @@ public static class Core {
                     ec.Logger.WriteLine($"已将环境变量&8[&7{args[2]}&8]定义为&8[&7{args[3]}&8]");
                     ec.EnvVars.Add(args[2],args[3]);
                 }
-                return null;
+                break;
         }
         return null;
     }

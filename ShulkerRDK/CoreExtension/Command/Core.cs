@@ -63,13 +63,20 @@ public static class Core {
     [Description("显示所有指令/指令别名")]
     public static void Help(string[] args,ShulkerContext sc) {
         ChainedTerminal logger = new ChainedTerminal("&7Help");
-        logger.WriteLine("&6所有指令");
-        foreach (KeyValuePair<string,Action<string[],ShulkerContext>> kvp in sc.Commands) {
-            logger.WriteLine($"&7{kvp.Key} &8{Tools.GetDescriptionAttribute(kvp.Value)}");
-        }
-        logger.WriteLine("&6所有别名");
-        foreach (KeyValuePair<string,string> kvp in sc.CommandAliases) {
-            logger.WriteLine($"&7{kvp.Key} &8=> {kvp.Value}");
+        if (!Tools.TryGetSub(["commands","alias","c","a"],args,1,logger)) return;
+        switch (args[1]) {
+            case "commands" or "c":
+                logger.WriteLine("&6所有指令");
+                foreach (KeyValuePair<string,Action<string[],ShulkerContext>> kvp in sc.Commands) {
+                    logger.WriteLine($"&7{kvp.Key} &8{Tools.GetDescriptionAttribute(kvp.Value)}");
+                }
+                break;
+            case "alias" or "a":
+                logger.WriteLine("&6所有别名");
+                foreach (KeyValuePair<string,string> kvp in sc.CommandAliases) {
+                    logger.WriteLine($"&7{kvp.Key} &8=> {kvp.Value}");
+                }
+                break;
         }
     }
 }

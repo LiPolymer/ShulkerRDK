@@ -48,6 +48,10 @@ static class Program {
         
         LoadExtensions(Context);
         Terminal.WriteLine("&l&bExtension",$"完成!&8[&7{Context.Extensions.Count - 1}&8]&r个外置扩展已载入!");
+        
+        InjectAliasFromVarTable(Context.CommandAliases,"alias.command.",Context.ProjectConfig.DefaultEnvVars);
+        InjectAliasFromVarTable(Context.StartActionAliases,"alias.startAction.",Context.ProjectConfig.DefaultEnvVars);
+        
         ActiveExtensions();
         Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
         if (args.Length > 0) {
@@ -62,6 +66,15 @@ static class Program {
         }
     }
 
+    static void InjectAliasFromVarTable(Dictionary<string,string> aliasDict, string prefix, Dictionary<string,string> table) {
+        Dictionary<string,string> injection = [];
+        foreach (KeyValuePair<string,string> kvp in table.Where(kvp => kvp.Key.StartsWith(prefix))) {
+            injection.Add(kvp.Key[prefix.Length..],kvp.Value);
+            Terminal.WriteLine("&7AliasInjector",$" &7{kvp.Key[prefix.Length..]}&8>&7{kvp.Value}",Terminal.MessageType.Debug);
+        }
+        Tools.MergeDict(aliasDict,injection);
+    }
+    
     static void InteractLoop() {
         while (true) {
             Terminal.Write("&6>&e");
@@ -69,7 +82,10 @@ static class Program {
             Terminal.Write("&r");
             string[] cmdArg = Tools.ResolveArgs(cmd);
             if (cmdArg.Length == 0) continue;
-            RunCommand(Tools.AliasResolver(cmd,Context.CommandAliases),Context);
+            if (!cmd.StartsWith("env")) {
+                cmd = Tools.AliasResolver(cmd,Context.CommandAliases);
+            }
+            RunCommand(cmd,Context);
         }
         // ReSharper disable once FunctionNeverReturns
     }
@@ -181,7 +197,7 @@ static class Program {
         }
     }
     static void RegisterExtension(ShulkerContext context,IShulkerExtension extension) {
-        Context.Extensions.Add(extension.Id,extension);
+        context.Extensions.Add(extension.Id,extension);
         Tools.MergeDict(context.StartActions,extension.StartActions);
         Tools.MergeDict(context.Commands,extension.Commands);
         Tools.MergeDict(context.CommandAliases,extension.CommandAliases);
