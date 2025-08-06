@@ -50,7 +50,9 @@ public class Extension : IShulkerExtension {
     public string Author { get => "LiPolymer"; }
     public string Version { get => "1.14.51"; }
     public string Link { get => "yaRiMasNe"; }
-    public string? AsciiArt { get => ""; }
+    public string Donating { get => "support me"; }
+    public string Document { get => "doc"; }
+    public string? AsciiArt { get => null; }
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; } = [];
     public Dictionary<string,Action<string[],ShulkerContext>> StartActions { get; } = [];
     public Dictionary<string,LevitateMethod> LevitateMethods { get; } = [];

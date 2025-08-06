@@ -1,13 +1,16 @@
-﻿using ShulkerRDK.Shared;
+﻿using System.ComponentModel;
+using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.CoreExtension.Command;
 
 public static class Core {
+    [Description("退出ShulkerRDK")]
     public static void Exit(string[] args,ShulkerContext sc) {
         Program.UnLoadExtensions();
         Terminal.WriteLine("","&7正在退出...");
         Environment.Exit(0);
     }
+    [Description("重载ShulkerRDK(不推荐使用)")]
     public static void Reload(string[] args,ShulkerContext sc) {
         Terminal.WriteLine("","&c重载可能会导致未知的异常 请不要向开发者报告",Terminal.MessageType.Warn);
         Program.UnLoadExtensions();
@@ -16,6 +19,7 @@ public static class Core {
         Terminal.WriteLine("","&c正在启动...",Terminal.MessageType.Warn);
         Program.Main(Tools.GetSubGroup(args,1));
     }
+    [Description("环境变量")]
     public static void EnvVar(string[] args,ShulkerContext sc) {
         ChainedTerminal logger = new ChainedTerminal("&9Env");
         if (!Tools.TryGetSub(["get","set","remove","list"],args,1,logger)) return;
@@ -52,7 +56,20 @@ public static class Core {
                 return;
         }
     }
+    [Description("清屏")]
     public static void Clear(string[] args,ShulkerContext sc) {
         Console.Clear();
+    }
+    [Description("显示所有指令/指令别名")]
+    public static void Help(string[] args,ShulkerContext sc) {
+        ChainedTerminal logger = new ChainedTerminal("&7Help");
+        logger.WriteLine("&6所有指令");
+        foreach (KeyValuePair<string,Action<string[],ShulkerContext>> kvp in sc.Commands) {
+            logger.WriteLine($"&7{kvp.Key} &8{Tools.GetDescriptionAttribute(kvp.Value)}");
+        }
+        logger.WriteLine("&6所有别名");
+        foreach (KeyValuePair<string,string> kvp in sc.CommandAliases) {
+            logger.WriteLine($"&7{kvp.Key} &8=> {kvp.Value}");
+        }
     }
 }

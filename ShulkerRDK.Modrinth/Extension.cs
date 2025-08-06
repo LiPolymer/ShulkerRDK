@@ -20,6 +20,9 @@ public class Extension : IShulkerExtension {
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev.Inf"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public string? Document { get => null; }
+
     public string AsciiArt { get => """
                                     &a|V| _  _| __ o __ _|_|_ 
                                     &a| |(_)(_| |  | | | |_| | &ePSK

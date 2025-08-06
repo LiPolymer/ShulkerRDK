@@ -10,6 +10,7 @@ static class Program {
         Terminal.Init(new LegacyTerminal());
         if (!File.Exists(StaticContext.Paths.ProjectConfig)) {
             InitProject();
+            return;
         }
         if (!File.Exists(StaticContext.Paths.LocalConfig)) {
             if (args.Length > 0) {
@@ -19,7 +20,7 @@ static class Program {
                 NugetHelper.IsProgressBarEnabled = false;
             } else {
                 InitLocalConfig();
-                Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));
+                return;
             }
         } else {
             Context.LocalConfig = JsonSerializer.Deserialize<LocalConfig>(File.ReadAllText(StaticContext.Paths.LocalConfig));

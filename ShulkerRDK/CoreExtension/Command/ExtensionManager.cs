@@ -1,10 +1,12 @@
-﻿using ShulkerRDK.Shared;
+﻿using System.ComponentModel;
+using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.CoreExtension.Command;
 
 public static class ExtensionManager {
     static Dictionary<string,Action<string[]>>? _subCommands;
     static ChainedTerminal? _myTerminal;
+    [Description("扩展管理器")]
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         _myTerminal ??= new ChainedTerminal("&6ExtMgr");
         if (_subCommands == null) {
@@ -35,15 +37,17 @@ public static class ExtensionManager {
         if (Program.Context.Extensions.TryGetValue(args[2],out IShulkerExtension? extension)) {
             _myTerminal!.WriteLine($"&6{extension.Name}&8@{extension.Version}");
             if (extension.AsciiArt != null) {
-                string[] lines = extension.AsciiArt.Split("\n");
+                string[] lines = extension.AsciiArt.Split('\n');
                 foreach (string line in lines) {
                     Terminal.WriteLine("",$" {line}");
                 }
             }
-            Terminal.WriteLine("",$" &6ID  &8[&e{extension.Id}&8]");
+            Terminal.WriteLine("",$" &6 ID &8[&e{extension.Id}&8]");
             Terminal.WriteLine("",$" &6描述&8[&e{extension.Description}&8]");
             Terminal.WriteLine("",$" &6作者&8[&e{extension.Author}&8]");
             Terminal.WriteLine("",$" &6网址&8[&e{extension.Link}&8]");
+            if (extension.Document != null) Terminal.WriteLine("",$" &6文档&8[&e{extension.Document}&8]");
+            if (extension.Donating != null) Terminal.WriteLine("",$" &6捐助&8[&e{extension.Donating}&8]");
         } else {
             _myTerminal!.WriteLine($"&7没有找到扩展&8[&c{args[2]}&8]", Terminal.MessageType.Warn);
         }

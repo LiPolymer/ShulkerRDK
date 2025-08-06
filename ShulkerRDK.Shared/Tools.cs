@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -72,6 +74,12 @@ public static partial class Tools {
         WriteIndented = true
     };
 
+    public static string? GetDescriptionAttribute(dynamic action) {
+        MethodInfo method = action.Method;
+        DescriptionAttribute? descriptionAttribute = method.GetCustomAttribute<DescriptionAttribute>();
+        return descriptionAttribute?.Description;
+    }
+    
     //// Resolver
 
     public static string[] ResolveArgs(string st) {

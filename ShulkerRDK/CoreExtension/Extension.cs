@@ -10,6 +10,7 @@ public class Extension : IShulkerExtension {
         Commands.Add("reload",Command.Core.Reload);
         Commands.Add("env",Command.Core.EnvVar);
         Commands.Add("clear",Command.Core.Clear);
+        Commands.Add("help",Command.Core.Help);
         //独立
         Commands.Add("ext",Command.ExtensionManager.Command);
         Commands.Add("task",Command.TaskManager.Command);
@@ -58,6 +59,8 @@ public class Extension : IShulkerExtension {
     public string Version { get => VersionStatic; }
     public static string VersionStatic { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public string? Document { get => null; }
     public string AsciiArt { get => AsciiArtStatic; }
 
     public static string AsciiArtStatic { get => "&l" + """

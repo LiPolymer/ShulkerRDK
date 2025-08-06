@@ -1,9 +1,11 @@
-﻿using ImageMagick;
+﻿using System.ComponentModel;
+using ImageMagick;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.ResourceMagick.Command;
 
 public static class Formatter {
+    [Description("(批量)转化png文件为psd")]
     public static void Command(string[] args,ShulkerContext sc) {
         ChainedTerminal ct = new ChainedTerminal("&dMagick");
         if (!Tools.CheckParamLength(args,1,ct)) return;

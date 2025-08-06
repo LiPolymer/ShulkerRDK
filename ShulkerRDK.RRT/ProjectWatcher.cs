@@ -1,8 +1,10 @@
-﻿using ShulkerRDK.Shared;
+﻿using System.ComponentModel;
+using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.RRT;
 
 public static class ProjectWatcher {
+    [Description("文件夹监测")]
     public static void Command(string[] args,ShulkerContext sc) {
         Transition(args,sc,Ct);
     }
@@ -60,20 +62,20 @@ public static class ProjectWatcher {
         _watcher.Renamed += OnChangeCaptured;
         
         _watcher.EnableRaisingEvents = true;
-        ct?.WriteLine($"开始监视&8[&7{folderPath}&8]");
+        ct?.WriteLine($"&7开始监视&8[&7{folderPath}&8]");
     }
 
     static void OnFileChanged(object sender,FileSystemEventArgs e) {
         Console.WriteLine();
-        Ct.WriteLine($"{e.ChangeType}: {e.FullPath}",Terminal.MessageType.Debug);
+        Ct.WriteLine($"&8{e.ChangeType}: {e.FullPath}",Terminal.MessageType.Debug);
     }
     static void OnRenamed(object sender,RenamedEventArgs e) {
         Console.WriteLine();
-        Ct.WriteLine($"重命名: {e.OldFullPath} -> {e.FullPath}",Terminal.MessageType.Debug);
+        Ct.WriteLine($"&8重命名: {e.OldFullPath} -> {e.FullPath}",Terminal.MessageType.Debug);
     }
     static void OnError(object sender,ErrorEventArgs e) {
         Console.WriteLine();
-        Ct.WriteLine($"错误: {e.GetException().Message}",Terminal.MessageType.Error);
+        Ct.WriteLine($"&c错误: {e.GetException().Message}",Terminal.MessageType.Error);
         Terminal.Write("&8[&c结束&7>&e");
     }
 
@@ -110,7 +112,7 @@ public static class ProjectWatcher {
 
     static void StopWatching(IChainedLikeTerminal? ct = null) {
         if (_watcher == null) return;
-        ct?.WriteLine("停止监视...");
+        ct?.WriteLine("&7停止监视...");
         _watcher?.Dispose();
         _watcher = null;
     }

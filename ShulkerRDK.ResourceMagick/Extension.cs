@@ -8,8 +8,8 @@ namespace ShulkerRDK.ResourceMagick;
 public class Extension : IShulkerExtension {
     public Extension() {
         #if !DEBUG
-        NugetHelper.DependencyVerify("Magick.NET.Core/14.6.0");
-        NugetHelper.DependencyVerify("Magick.NET-Q16-AnyCPU/14.6.0","net8.0",true,[
+        NugetHelper.DependencyVerify("Magick.NET.Core/14.7.0");
+        NugetHelper.DependencyVerify("Magick.NET-Q16-AnyCPU/14.7.0","net8.0",true,[
             "Magick.NET-Q16-AnyCPU.dll",
             "Magick.Native-Q16-x64.dll|Magick.Native-Q16-x86.dll|Magick.Native-Q16-arm64.dll" +
             "|Magick.Native-Q16-x64.dll.so|Magick.Native-Q16-arm64.dll.so" +
@@ -31,6 +31,9 @@ public class Extension : IShulkerExtension {
     public string Author { get => "LiPolymer"; }
     public string Version { get => "Dev"; }
     public string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
+    public string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public string? Document { get => null; }
+
     public string? AsciiArt { get => """
                                      &b _  _      _____&d _      ____  _____ _  ____ _  __
                                      &b/ \/ \__/|/  __/&d/ \__/|/  _ \/  __// \/   _Y |/ /

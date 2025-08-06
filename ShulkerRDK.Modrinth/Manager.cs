@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Text.Json;
 using Modrinth;
 using Modrinth.Models;
 using Modrinth.Models.Enums;
@@ -35,9 +36,10 @@ public class Manager {
         return null;
     }
 
+    [Description("Modrinth平台操作")]
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         ChainedTerminal ct = new ChainedTerminal("&aModrinth");
-        if (!Tools.TryGetSub(["r","s","clean"],args,1,ct)) return;
+        if (!Tools.TryGetSub(["restore","serialize","clean","r","s"],args,1,ct)) return;
         string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
         bool isOutMissing = !Tools.CheckParamLength(args,2);
         string to = !isOutMissing ? args[3] : from;
@@ -46,13 +48,13 @@ public class Manager {
 
     static void TransitionLayer(string act,string from,string to,bool destroySource,IChainedLikeTerminal ct) {
         switch (act) {
-            case "r":
+            case "r" or "restore":
                 Instance.Restore(from,to,ct,destroySource);
                 break;
-            case "s":
+            case "s" or "serialize":
                 Instance.Serialize(from,to,ct,destroySource);
                 break;
-            case "e":
+            case "e" or "export":
                 Instance.Indexer("./shulker/mrpack.template.json",from,to,ct,destroySource);
                 break;
             case "clean":
@@ -98,11 +100,11 @@ public class Manager {
                 if (destroySource) File.Delete(target);
             }
         }
-        ct?.WriteLine("完成!");
+        ct?.WriteLine("&7完成!");
     }
     void Restore(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
         string[] files = Directory.GetFiles(input,"*.mrf",SearchOption.AllDirectories);
-        ct?.WriteLine($"正在复原[{input}]");
+        ct?.WriteLine($"&7正在复原&8[&7{input}&8]");
         foreach (string file in files) {
             string relativePath = Path.GetRelativePath(input,file);
             string destPath = Path.Combine(output,relativePath);
@@ -110,7 +112,7 @@ public class Manager {
             ManagedFileExport(file,destPath,true,ct);
             if (destroySource) File.Delete(file);
         }
-        ct?.WriteLine("完成!");
+        ct?.WriteLine("&7完成!");
     }
 
     const string LocalPath = "./shulker/local/mrf/";

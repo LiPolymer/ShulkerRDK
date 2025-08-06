@@ -7,6 +7,8 @@ public interface IShulkerExtension {
     public string Author { get; }
     public string Version { get; }
     public string Link { get; }
+    public string? Donating { get; }
+    public string? Document { get; }
     public string? AsciiArt { get; }
     
     public Dictionary<string,Action<string[],ShulkerContext>> Commands { get; }

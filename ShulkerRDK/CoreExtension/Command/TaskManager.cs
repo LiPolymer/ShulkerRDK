@@ -1,9 +1,11 @@
-﻿using ShulkerRDK.Shared;
+﻿using System.ComponentModel;
+using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.CoreExtension.Command;
 
 public static class TaskManager {
     static Dictionary<string,Action<string[]>>? _subCommands;
+    [Description("LevitateTasks管理")]
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         if (_subCommands == null) {
             _subCommands = [];
