@@ -3,10 +3,51 @@
 namespace ShulkerRDK.Shared;
 
 public class ProjectConfig {
-    public string ProjectName { get; init; } = string.Empty;
-    public string RootPath { get; init; } = string.Empty;
-    public string OutPath { get; init; } = string.Empty;
-    public Dictionary<string,string> DefaultEnvVars { get; set; } = [];
+    public ProjectConfig() {
+        OnPropertyChanged += Save;
+    }
+    
+    public event Action OnPropertyChanged;
+    string _projectName = string.Empty;
+    public string ProjectName {
+        get => _projectName;
+        set {
+            _projectName = value;
+            OnPropertyChanged();
+        }
+    }
+
+    string _version = "0.0.0";
+
+    public string Version {
+        get => _version;
+        set {
+            _version = value;
+            OnPropertyChanged();
+        }
+    }
+
+    string _rootPath = string.Empty;
+
+    public string RootPath {
+        get => _rootPath;
+        set {
+            _rootPath = value;
+            OnPropertyChanged();
+        }
+    }
+
+    string _outPath = string.Empty;
+
+    public string OutPath {
+        get => _outPath;
+        set {
+            _outPath = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public Dictionary<string,string> DefaultEnvVars { get; init; } = [];
 
     public void Save() {
         Tools.WriteAllText(StaticContext.Paths.ProjectConfig,JsonSerializer.Serialize(this,Tools.JsonSerializerOptions));

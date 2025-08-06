@@ -60,7 +60,7 @@ public static class Core {
     public static void Clear(string[] args,ShulkerContext sc) {
         Console.Clear();
     }
-    [Description("显示所有指令/指令别名")]
+    [Description("显示指令帮助")]
     public static void Help(string[] args,ShulkerContext sc) {
         ChainedTerminal logger = new ChainedTerminal("&7Help");
         if (!Tools.TryGetSub(["commands","alias","c","a"],args,1,logger)) return;
@@ -76,6 +76,33 @@ public static class Core {
                 foreach (KeyValuePair<string,string> kvp in sc.CommandAliases) {
                     logger.WriteLine($"&7{kvp.Key} &8=> {kvp.Value}");
                 }
+                break;
+        }
+    }
+    [Description("项目设定管理")]
+    public static void Project(string[] args,ShulkerContext sc) {
+        ChainedTerminal logger = new ChainedTerminal("&a&oProj");
+        if (!Tools.TryGetSub(["info","chname","chroot","chout","i"],args,1,logger)) return;
+        switch (args[1]) {
+            case "info" or "i":
+                logger.WriteLine($"&7{sc.ProjectConfig!.ProjectName}&8@{sc.ProjectConfig.Version}");
+                logger.WriteLine($"&7项目资源根&8[&7{sc.ProjectConfig.RootPath}&8]");
+                logger.WriteLine($"&7项目输出目录&8[&7{sc.ProjectConfig.OutPath}&8]");
+                break;
+            case "chname":
+                if (!Tools.CheckParamLength(args,2,logger)) return;
+                sc.ProjectConfig!.ProjectName = args[2];
+                logger.WriteLine($"&a已将项目名修改为&8[&7{args[2]}&8]");
+                break;
+            case "chroot":
+                if (!Tools.CheckParamLength(args,2,logger)) return;
+                sc.ProjectConfig!.RootPath = args[2];
+                logger.WriteLine($"&a已将项目资源根修改为&8[&7{args[2]}&8]");
+                break;
+            case "chout":
+                if (!Tools.CheckParamLength(args,2,logger)) return;
+                sc.ProjectConfig!.OutPath = args[2];
+                logger.WriteLine($"&a已将项目输出目录修改为&8[&7{args[2]}&8]");
                 break;
         }
     }

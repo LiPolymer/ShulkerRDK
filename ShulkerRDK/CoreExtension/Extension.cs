@@ -7,13 +7,15 @@ public class Extension : ExtensionBase {
         ////指令
         //核心
         Commands.Add("exit",Command.Core.Exit);
-        Commands.Add("reload",Command.Core.Reload);
         Commands.Add("env",Command.Core.EnvVar);
         Commands.Add("clear",Command.Core.Clear);
         Commands.Add("help",Command.Core.Help);
+        Commands.Add("proj",Command.Core.Project);
         //独立
         Commands.Add("ext",Command.ExtensionManager.Command);
         Commands.Add("task",Command.TaskManager.Command);
+        //这个位置是故意的
+        Commands.Add("reload",Command.Core.Reload);
         
         ////Levitate方法
         //核心

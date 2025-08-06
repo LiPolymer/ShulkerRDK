@@ -36,9 +36,9 @@ static class Program {
         Terminal.WriteLine($"[&l&5Shulker&6RDK&r] &7{Extension.VersionStatic}   &8正在启动");
         Context.ProjectConfig = ProjectConfig.Load();
         Terminal.WriteLine("&l&3Core",$"&3当前项目&8[&b{Context.ProjectConfig!.ProjectName}&8]");
-        Terminal.WriteLine("&l&3Core","正在载入核心扩展");
+        Terminal.WriteLine("&l&3Core","&7正在载入核心扩展");
         RegisterExtension(Context, new CoreExtension.Extension());
-        Terminal.WriteLine("&l&bExtension","开始加载外置扩展");
+        Terminal.WriteLine("&l&bExtension","&7开始加载外置扩展");
         
         // 定位插件依赖于此处
         AppDomain.CurrentDomain.AssemblyResolve += (_, resolveEventArgs) => {
@@ -47,21 +47,23 @@ static class Program {
         };
         
         LoadExtensions(Context);
-        Terminal.WriteLine("&l&bExtension",$"完成!&8[&7{Context.Extensions.Count - 1}&8]&r个外置扩展已载入!");
+        Terminal.WriteLine("&l&bExtension",$"&7完成!&8[&7{Context.Extensions.Count - 1}&8]&7个外置扩展已载入!");
         
         InjectAliasFromVarTable(Context.CommandAliases,"alias.command.",Context.ProjectConfig.DefaultEnvVars);
         InjectAliasFromVarTable(Context.StartActionAliases,"alias.startAction.",Context.ProjectConfig.DefaultEnvVars);
         
         ActiveExtensions();
-        Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
+        
         if (args.Length > 0) {
+            Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
             args = Tools.AliasResolver(args,Context.StartActionAliases);
             if (Context.StartActions.TryGetValue(args[0],out Action<string[],ShulkerContext>? action)) {
                 action(args,Context);
             } else {
-                Terminal.WriteLine("",$"&c未能解析这个启动参数&8[&4{args[0]}&8]",Terminal.MessageType.Critical);
+                Terminal.WriteLine("&l&3Core",$"&c未能解析这个启动参数&8[&4{args[0]}&8]",Terminal.MessageType.Critical);
             }
         } else {
+            Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成! &8使用&o help c &r&8查看所有可用命令");
             InteractLoop();
         }
     }
@@ -185,11 +187,11 @@ static class Program {
         foreach (string file in files) {
             try {
                 if (!file.EndsWith(".dll")) continue;
-                Terminal.WriteLine("&l&bExtension",$"正在载入&8[&r{Path.GetFileName(file)}&8]");
+                Terminal.WriteLine("&l&bExtension",$"&7正在载入&8[&7{Path.GetFileName(file)}&8]");
                 IShulkerExtension iExtension = GetIExtension(LoadAssembly(file));
                 RegisterExtension(context, iExtension);
                 
-                Terminal.WriteLine("&l&bExtension",$"&8[&r{iExtension.Name}&8]&a载入完成!");
+                Terminal.WriteLine("&l&bExtension",$"&8[&7{iExtension.Name}&8@{iExtension.Version}]&a载入完成!");
             }
             catch (Exception e) {
                 Terminal.WriteLine("&l&bExtension",e.Message,Terminal.MessageType.Error);
@@ -205,7 +207,7 @@ static class Program {
     }   
 
     static void ActiveExtensions() {
-        Terminal.WriteLine("&l&bExtension","正在激活扩展...");
+        Terminal.WriteLine("&l&bExtension","&7正在激活扩展...");
         foreach (IShulkerExtension ext in Context.Extensions.Values) {
             ext.Init(Context);
         }
