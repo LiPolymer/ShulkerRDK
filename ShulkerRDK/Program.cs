@@ -51,6 +51,8 @@ static class Program {
         
         InjectAliasFromVarTable(Context.CommandAliases,"alias.command.",Context.ProjectConfig.DefaultEnvVars);
         InjectAliasFromVarTable(Context.StartActionAliases,"alias.startAction.",Context.ProjectConfig.DefaultEnvVars);
+
+        Context.ProjectConfig.OnPropertyChanged += Context.ProjectConfig.Save;
         
         ActiveExtensions();
         

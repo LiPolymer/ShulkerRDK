@@ -3,17 +3,13 @@
 namespace ShulkerRDK.Shared;
 
 public class ProjectConfig {
-    public ProjectConfig() {
-        OnPropertyChanged += Save;
-    }
-    
-    public event Action OnPropertyChanged;
+    public event Action? OnPropertyChanged;
     string _projectName = string.Empty;
     public string ProjectName {
         get => _projectName;
         set {
             _projectName = value;
-            OnPropertyChanged();
+            OnPropertyChanged?.Invoke();
         }
     }
 
@@ -23,7 +19,7 @@ public class ProjectConfig {
         get => _version;
         set {
             _version = value;
-            OnPropertyChanged();
+            OnPropertyChanged?.Invoke();
         }
     }
 
@@ -33,7 +29,7 @@ public class ProjectConfig {
         get => _rootPath;
         set {
             _rootPath = value;
-            OnPropertyChanged();
+            OnPropertyChanged?.Invoke();
         }
     }
 
@@ -43,7 +39,7 @@ public class ProjectConfig {
         get => _outPath;
         set {
             _outPath = value;
-            OnPropertyChanged();
+            OnPropertyChanged?.Invoke();
         }
     }
 
