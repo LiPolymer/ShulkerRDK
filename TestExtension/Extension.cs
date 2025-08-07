@@ -12,6 +12,11 @@ public class Extension : IShulkerExtension {
             Terminal.WriteLine(strings.Length < 2 ? "&7你没有输入带参指令" : $"&7你的第一个参数是 [&e{strings[1]}&7]");
         });
 
+        Commands.Add("break",(strings,_) => {
+            string[] s = ["aa","bb"];
+            Console.WriteLine(s[2]);
+        });
+        
         Commands.Add("down",(strings,_) => {
             if (strings.Length >= 2) {
                 FileDownloader.DownloadFile(strings[1],"./downloader/test");

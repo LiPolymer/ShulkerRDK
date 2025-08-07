@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.Json;
 using ShulkerRDK.CoreExtension;
 using ShulkerRDK.Shared;
@@ -7,6 +7,7 @@ namespace ShulkerRDK;
 
 static class Program {
     public static void Main(string[] args) {
+        AppDomain.CurrentDomain.UnhandledException += GlobalExceptionHandler;
         Terminal.Init(new LegacyTerminal());
         if (!File.Exists(StaticContext.Paths.ProjectConfig)) {
             InitProject();
@@ -68,6 +69,28 @@ static class Program {
             Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成! &8使用&o help c &r&8查看所有可用命令");
             InteractLoop();
         }
+    }
+
+    static void GlobalExceptionHandler(object sender, UnhandledExceptionEventArgs ea) {
+        Exception e = (Exception)ea.ExceptionObject;
+        ChainedTerminal ct = new ChainedTerminal("&l&4CRASHED");
+        Tools.DisplayException(e,ct);
+        #if !DEBUG
+        try {
+            string logPath = $"./shulker/local/crash_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log";
+            if (!Directory.Exists(Path.GetDirectoryName(logPath))) {
+                Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+            }
+            string logEntry = $"ShulkerRDK CrashReport\n[{DateTime.Now:yyyy-MM-dd HH:mm:ss}][CRASHED] {e.GetType().Name}: {e.Message}\n{e.StackTrace}";
+            File.WriteAllText(logPath, logEntry);
+            ct.WriteLine($"&7详细错误信息已记录到&8[&7{logPath}&8]", Terminal.MessageType.Critical);
+        } catch { 
+            //ignored
+        }
+        #endif
+        ct.WriteLine("&7按任意键退出...", Terminal.MessageType.Critical);
+        Console.ReadKey();
+        Environment.Exit(1);
     }
 
     static void InjectAliasFromVarTable(Dictionary<string,string> aliasDict, string prefix, Dictionary<string,string> table) {

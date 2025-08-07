@@ -88,6 +88,12 @@ public static partial class Tools {
         resolved[^(depth + 1)] = buffer.ToString();
         return string.Join(".",resolved);
     }
+
+    public static void DisplayException(Exception e,IChainedLikeTerminal ct) {
+        ct.WriteLine($"&c发生未处理的异常&8[&c{e.Message}&8]", Terminal.MessageType.Critical);
+        ct.WriteLine($"&7异常类型&8[&7{e.GetType().Name}&8]", Terminal.MessageType.Critical);
+        ct.WriteLine( $"&7堆栈跟踪\n&8{e.StackTrace}", Terminal.MessageType.Debug);
+    }
     
     //// Resolver
 
