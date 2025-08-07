@@ -106,4 +106,31 @@ public static class Core {
                 break;
         }
     }
+    [Description("项目版本管理")]
+    public static void VersionControl(string[] args,ShulkerContext sc) {
+        ChainedTerminal logger = new ChainedTerminal("&e&oVer");
+        if (!Tools.TryGetSub(["show","smajor","sminor","sfix","set"],args,1,logger)) return;
+        switch (args[1]) {
+            case "show":
+                logger.WriteLine($"&7当前版本号&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "smajor":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,2);
+                logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "sminor":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,1);
+                logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "sfix":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,0);
+                logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "set":
+                if (!Tools.CheckParamLength(args,2,logger)) return;
+                sc.ProjectConfig!.Version = args[2];
+                logger.WriteLine($"&a已将项目版本修改为&8[&7{args[2]}&8]");
+                break;
+        }
+    }
 }

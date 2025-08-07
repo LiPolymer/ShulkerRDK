@@ -79,6 +79,15 @@ public static partial class Tools {
         DescriptionAttribute? descriptionAttribute = method.GetCustomAttribute<DescriptionAttribute>();
         return descriptionAttribute?.Description;
     }
+
+    public static string VersionStepper(string input,int depth) {
+        string[] resolved = input.Split('.');
+        if (resolved.Length - 1 < depth) return input;
+        int buffer = Convert.ToInt32(resolved[^(depth + 1)]);
+        buffer++;
+        resolved[^(depth + 1)] = buffer.ToString();
+        return string.Join(".",resolved);
+    }
     
     //// Resolver
 

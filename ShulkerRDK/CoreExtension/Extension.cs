@@ -11,6 +11,7 @@ public class Extension : ExtensionBase {
         Commands.Add("clear",Command.Core.Clear);
         Commands.Add("help",Command.Core.Help);
         Commands.Add("proj",Command.Core.Project);
+        Commands.Add("verm",Command.Core.VersionControl);
         //独立
         Commands.Add("ext",Command.ExtensionManager.Command);
         Commands.Add("task",Command.TaskManager.Command);

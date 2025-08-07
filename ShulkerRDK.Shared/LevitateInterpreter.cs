@@ -9,6 +9,7 @@ public class LevitateInterpreter {
         _envVars.Add("project.src",shulkerContext.ProjectConfig!.RootPath);
         _envVars.Add("project.name",shulkerContext.ProjectConfig!.ProjectName);
         _envVars.Add("project.output",shulkerContext.ProjectConfig!.OutPath);
+        _envVars.Add("project.ver",shulkerContext.ProjectConfig!.Version);
         _envVars.Add("project.cache","./shulker/local/cache/build");
         foreach (KeyValuePair<string,string> kvp in shulkerContext.ProjectConfig!.DefaultEnvVars) {
             if (_envVars.ContainsKey(kvp.Key)) {
