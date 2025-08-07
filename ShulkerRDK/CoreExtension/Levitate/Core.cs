@@ -295,4 +295,40 @@ public static class Core {
         }
         return null;
     }
+    
+    public static string? VersionControl(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&e&oVer");
+        ShulkerContext sc = ec.ShulkerContext;
+        if (!Tools.TryGetSub(["smajor","sminor","sfix","set","get"],args,1,ec.Logger)) return null;
+        switch (args[1]) {
+            case "smajor":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,2);
+                ec.Logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "sminor":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,1);
+                ec.Logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "sfix":
+                sc.ProjectConfig!.Version = Tools.VersionStepper(sc.ProjectConfig!.Version,0);
+                ec.Logger.WriteLine($"&a项目版本更新为&8[&7{sc.ProjectConfig!.Version}&8]");
+                break;
+            case "set":
+                if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+                sc.ProjectConfig!.Version = args[2];
+                ec.Logger.WriteLine($"&a已将项目版本修改为&8[&7{args[2]}&8]");
+                break;
+            case "get":
+                if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+                try {
+                    return sc.ProjectConfig!.Version.Split('.')[^(Convert.ToInt32(args[2]) + 1)];
+                }
+                catch(Exception e) {
+                    ec.Logger.WriteLine($"&c{e.Message}",Terminal.MessageType.Error);
+                    return null;
+                }
+        }
+        ec.EnvVars["project.ver"] = sc.ProjectConfig!.Version;
+        return null;
+    }
 }

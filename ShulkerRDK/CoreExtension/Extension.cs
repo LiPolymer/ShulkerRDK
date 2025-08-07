@@ -30,6 +30,7 @@ public class Extension : ExtensionBase {
         LevitateMethods.Add("delete",Levitate.Core.Delete);
         LevitateMethods.Add("sh",Levitate.Core.Shell);
         LevitateMethods.Add("flat",Levitate.Core.Flatten);
+        LevitateMethods.Add("verm",Levitate.Core.VersionControl);
         //独立
         LevitateMethods.Add("pkgr",Levitate.Packager.Method);
         
