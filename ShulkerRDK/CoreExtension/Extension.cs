@@ -12,6 +12,7 @@ public class Extension : ExtensionBase {
         Commands.Add("help",Command.Core.Help);
         Commands.Add("proj",Command.Core.Project);
         Commands.Add("verm",Command.Core.VersionControl);
+        Commands.Add("netfile",Command.Core.NetFile);
         //独立
         Commands.Add("ext",Command.ExtensionManager.Command);
         Commands.Add("task",Command.TaskManager.Command);

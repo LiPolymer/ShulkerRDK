@@ -73,7 +73,7 @@ public class Manager {
         ct?.WriteLine($"&7正在编入&8[&7{input}&8]");
         Dictionary<string,List<string>> reverseMap = [];
         foreach (string file in files) {
-            string sha1 = Utils.GetSha1(file);
+            string sha1 = Tools.GetSha1(file);
             if (reverseMap.TryGetValue(sha1,out List<string>? value)) {
                 ct?.WriteLine($"&7链接文件&8[&7{file}&8]&7>>&8[&7{sha1}&8]",Terminal.MessageType.Debug);
                 value.Add(file);

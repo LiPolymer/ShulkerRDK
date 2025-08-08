@@ -331,4 +331,8 @@ public static class Core {
         ec.EnvVars["project.ver"] = sc.ProjectConfig!.Version;
         return null;
     }
+
+    public static string? NetFile(string[] args,LevitateExecutionContext ec) {
+        return null;
+    }
 }

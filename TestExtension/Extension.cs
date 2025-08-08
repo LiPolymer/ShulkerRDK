@@ -12,9 +12,15 @@ public class Extension : IShulkerExtension {
             Terminal.WriteLine(strings.Length < 2 ? "&7你没有输入带参指令" : $"&7你的第一个参数是 [&e{strings[1]}&7]");
         });
 
-        Commands.Add("break",(strings,_) => {
+        Commands.Add("break",(_,_) => {
             string[] s = ["aa","bb"];
             Console.WriteLine(s[2]);
+        });
+        
+        LevitateMethods.Add("break",(_,_) => {
+            string[] s = ["aa","bb"];
+            Console.WriteLine(s[2]);
+            return null;
         });
         
         Commands.Add("down",(strings,_) => {

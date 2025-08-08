@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using ShulkerRDK.CoreExtension.Shared;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.CoreExtension.Command;
@@ -130,6 +131,18 @@ public static class Core {
                 if (!Tools.CheckParamLength(args,2,logger)) return;
                 sc.ProjectConfig!.Version = args[2];
                 logger.WriteLine($"&a已将项目版本修改为&8[&7{args[2]}&8]");
+                break;
+        }
+    }
+    [Description("管理网络链接文件")]
+    public static void NetFile(string[] args,ShulkerContext sc) {
+        ChainedTerminal logger = new ChainedTerminal("&eNetFile");
+        if (!Tools.TryGetSub(["create"],args,1,logger)) return;
+        switch (args[1]) {
+            case "create":
+                if (!Tools.CheckParamLength(args,2,logger)) return;
+                if (!Tools.CheckParamLength(args,3,logger)) return;
+                NetworkFile.Create(args[2],args[3],logger);
                 break;
         }
     }

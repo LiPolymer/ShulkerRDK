@@ -4,6 +4,8 @@ using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -89,10 +91,25 @@ public static partial class Tools {
         return string.Join(".",resolved);
     }
 
-    public static void DisplayException(Exception e,IChainedLikeTerminal ct) {
-        ct.WriteLine($"&c发生未处理的异常&8[&c{e.Message}&8]", Terminal.MessageType.Critical);
-        ct.WriteLine($"&7异常类型&8[&7{e.GetType().Name}&8]", Terminal.MessageType.Critical);
+    public static void DisplayException(Exception e,IChainedLikeTerminal ct, Terminal.MessageType mt = Terminal.MessageType.Critical) {
+        ct.WriteLine($"&c发生未处理的异常&8[&c{e.Message}&8]", mt);
+        ct.WriteLine($"&7异常类型&8[&7{e.GetType().Name}&8]", mt);
         ct.WriteLine( $"&7堆栈跟踪\n&8{e.StackTrace}", Terminal.MessageType.Debug);
+    }
+    
+    public static string GetSha1(string s) {
+        FileStream file = new FileStream(s,FileMode.Open);
+#pragma warning disable SYSLIB0021
+        SHA1 sha1 = new SHA1CryptoServiceProvider();
+#pragma warning restore SYSLIB0021
+        byte[] rawHash = sha1.ComputeHash(file);
+        file.Close();
+
+        StringBuilder sc = new StringBuilder();
+        foreach (byte t in rawHash) {
+            sc.Append(t.ToString("x2"));
+        }
+        return sc.ToString();
     }
     
     //// Resolver
