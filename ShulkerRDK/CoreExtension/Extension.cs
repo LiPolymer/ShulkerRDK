@@ -32,6 +32,7 @@ public class Extension : ExtensionBase {
         LevitateMethods.Add("sh",Levitate.Core.Shell);
         LevitateMethods.Add("flat",Levitate.Core.Flatten);
         LevitateMethods.Add("verm",Levitate.Core.VersionControl);
+        LevitateMethods.Add("netfile",Levitate.Core.NetFile);
         //独立
         LevitateMethods.Add("pkgr",Levitate.Packager.Method);
         

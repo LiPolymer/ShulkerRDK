@@ -137,12 +137,29 @@ public static class Core {
     [Description("管理网络链接文件")]
     public static void NetFile(string[] args,ShulkerContext sc) {
         ChainedTerminal logger = new ChainedTerminal("&eNetFile");
-        if (!Tools.TryGetSub(["create"],args,1,logger)) return;
+        if (!Tools.TryGetSub(["create","clean","restore"],args,1,logger)) return;
         switch (args[1]) {
             case "create":
                 if (!Tools.CheckParamLength(args,2,logger)) return;
                 if (!Tools.CheckParamLength(args,3,logger)) return;
                 NetworkFile.Create(args[2],args[3],logger);
+                break;
+            case "clean":
+                logger.WriteLine("&7正在清理缓存文件...");
+                if (Directory.Exists(NetworkFile.LocalPath)) {
+                    Directory.Delete(NetworkFile.LocalPath,true);
+                }
+                logger.WriteLine("&7完成!");
+                break;
+            case "restore":
+                string from = Tools.CheckParamLength(args,2) ? args[2] : sc.ProjectConfig!.RootPath;
+                bool isOutMissing = !Tools.CheckParamLength(args,2);
+                string to = !isOutMissing ? args[3] : from;
+                logger.WriteLine("&6警告 此操作将转化链接文件为真实文件,不可撤销");
+                Terminal.Write("&7是否继续? &8[&7y&8/&7n&8] &7");
+                string? csr = Console.ReadLine();
+                if (csr != "y") return;
+                NetworkFile.Restore(from,to,logger,isOutMissing);
                 break;
         }
     }

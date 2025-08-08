@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
+using ShulkerRDK.CoreExtension.Shared;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.CoreExtension.Levitate;
@@ -333,6 +334,17 @@ public static class Core {
     }
 
     public static string? NetFile(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&eNetFile");
+        LevitateLogger logger = ec.Logger;
+        if (!Tools.TryGetSub(["restore","r"],args,1,logger)) return null;
+        switch (args[1]) {
+            case "restore" or "r":
+                string from = Tools.CheckParamLength(args,2) ? args[2] : ec.ShulkerContext.ProjectConfig!.RootPath;
+                bool isOutMissing = !Tools.CheckParamLength(args,2);
+                string to = !isOutMissing ? args[3] : from;
+                NetworkFile.Restore(from,to,logger,isOutMissing);
+                break;
+        }
         return null;
     }
 }
