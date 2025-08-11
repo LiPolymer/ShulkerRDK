@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace ShulkerRDK.Shared;
@@ -280,6 +281,7 @@ public static class NugetHelper {
     public static bool IsProgressBarEnabled { get; set; } = true;
     public static void DependencyVerify(string packageIdentifier,string libTarget = "net8.0",bool extractRuntime = true,string[]? checkFiles = null) {
         try {
+            Console.WriteLine(packageIdentifier);
             checkFiles ??= [packageIdentifier.Split('/')[0] + ".dll"];
             bool passed = true;
             foreach (string checkpoint in checkFiles) {
@@ -290,7 +292,11 @@ public static class NugetHelper {
                     passed = false;
                 }
             }
-            if (passed) return;
+            if (passed) {
+                if (DependencyMetadata.Check(packageIdentifier)) {
+                    return;
+                }
+            }
             if (!Directory.Exists("./shulker/local/libs")) {
                 Directory.CreateDirectory("./shulker/local/libs");
             }
@@ -345,6 +351,44 @@ public static class NugetHelper {
         catch (Exception e) {
             Console.WriteLine(e);
         }
+    }
+    
+    public class DependencyMetadata {
+        public static bool Check(string identifier) {
+            DependencyMetadata dm = Get(identifier);
+            return dm.Version == identifier.Split('/')[1];
+        }
+
+        public static void Overwrite(string identifier) {
+            string path = Path.Combine("./shulker/local/libs",identifier.Split('/')[0] + ".depMeta.json");
+            Tools.WriteAllText(path,JsonSerializer.Serialize(new DependencyMetadata {
+                Version = identifier.Split('/')[1]
+            },Tools.JsonSerializerOptions));
+        }
+        
+        public static DependencyMetadata Get(string identifier) {
+            string path = Path.Combine("./shulker/local/libs",identifier.Split('/')[0] + ".depMeta.json");
+            if (!File.Exists(path)) {
+                Tools.WriteAllText(path,JsonSerializer.Serialize(new DependencyMetadata {
+                    Version = identifier.Split('/')[1]
+                },Tools.JsonSerializerOptions));
+            }
+            DependencyMetadata meta = JsonSerializer.Deserialize<DependencyMetadata>(File.ReadAllText(path))!;
+            meta.Name = identifier.Split('/')[0];
+            return meta;
+        }
+
+        public void Write() {
+            string path = Path.Combine("./shulker/local/libs",Name + ".dll.json");
+            Tools.WriteAllText(path,JsonSerializer.Serialize(this,Tools.JsonSerializerOptions));
+        }
+
+        [JsonIgnore]
+        public string Name = "";
+
+        public required string Version { get; set; }
+        // todo:实现平台记录与验证
+        public string Platform { get; set; } = "";
     }
 }
 
