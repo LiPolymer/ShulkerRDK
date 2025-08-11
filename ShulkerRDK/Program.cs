@@ -187,7 +187,6 @@ static class Program {
     static IShulkerExtension GetIExtension(Assembly assembly) {
         // ReSharper disable once LoopCanBeConvertedToQuery
         foreach (Type type in assembly.GetTypes()) {
-            Console.WriteLine(type.Name);
             if (!typeof(IShulkerExtension).IsAssignableFrom(type)) continue;
             return (Activator.CreateInstance(type) as IShulkerExtension)!;
         }
