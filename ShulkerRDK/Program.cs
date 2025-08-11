@@ -187,6 +187,7 @@ static class Program {
     static IShulkerExtension GetIExtension(Assembly assembly) {
         // ReSharper disable once LoopCanBeConvertedToQuery
         foreach (Type type in assembly.GetTypes()) {
+            Console.WriteLine(type.Name);
             if (!typeof(IShulkerExtension).IsAssignableFrom(type)) continue;
             return (Activator.CreateInstance(type) as IShulkerExtension)!;
         }
@@ -213,13 +214,19 @@ static class Program {
             try {
                 if (!file.EndsWith(".dll")) continue;
                 Terminal.WriteLine("&l&bExtension",$"&7正在载入&8[&7{Path.GetFileName(file)}&8]");
+                // todo:正式修补这个问题 引发原因未知
+                // 这是临时处理
+                if (Path.GetFileName(file) == "ShulkerRDK.Modrinth.dll") {
+                    NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
+                }
                 IShulkerExtension iExtension = GetIExtension(LoadAssembly(file));
                 RegisterExtension(context, iExtension);
                 
                 Terminal.WriteLine("&l&bExtension",$"&8[&7{iExtension.Name}&8@{iExtension.Version}]&a载入完成!");
             }
             catch (Exception e) {
-                Terminal.WriteLine("&l&bExtension",e.Message,Terminal.MessageType.Error);
+                Tools.DisplayException(e,new ChainedTerminal("&l&bExtension"),Terminal.MessageType.Error);
+                //Terminal.WriteLine("&l&bExtension",e.Message,Terminal.MessageType.Error);
             }
         }
     }

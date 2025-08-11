@@ -1,6 +1,4 @@
-﻿using Modrinth;
-using ShulkerRDK.Shared;
-using Version = Modrinth.Models.Version;
+﻿using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.Modrinth;
 
@@ -8,7 +6,7 @@ namespace ShulkerRDK.Modrinth;
 public class Extension : ExtensionBase {
     public Extension() {
         #if !DEBUG
-        NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
+        //NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
         #endif
         
         Commands.Add("mrp",Manager.Command);
