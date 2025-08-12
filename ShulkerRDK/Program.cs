@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using ShulkerRDK.CoreExtension;
@@ -59,6 +60,10 @@ static class Program {
         
         if (args.Length > 0) {
             Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
+            if (DonateRecommendation()) {
+                Terminal.WriteLine("&8&o三秒后执行您的指令");
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+            }
             args = Tools.AliasResolver(args,Context.StartActionAliases);
             if (Context.StartActions.TryGetValue(args[0],out Action<string[],ShulkerContext>? action)) {
                 action(args,Context);
@@ -67,10 +72,43 @@ static class Program {
             }
         } else {
             Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成! &8使用&o help c &r&8查看所有可用命令");
+            DonateRecommendation();
             InteractLoop();
         }
     }
 
+    static bool DonateRecommendation() {
+        try {
+            // 保持此处代码脆弱,便于用户自己邪修禁用该功能
+            string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\ShulkerRDK\executionCount.dat";
+            if (!File.Exists(path)) return false;
+            string[] lines = File.ReadAllLines(path);
+            int count = Convert.ToInt32(lines[0]);
+            int last = Convert.ToInt32(lines[1]);
+            int[] checkpoints = [114514,32767,25565,11451,10000,5000,4000,3000,2000,1145,500,250,100];
+            int[] special = [1145,11451,114514];
+            bool triggered = false;
+            foreach (int point in checkpoints) {
+                if (count >= point & last < point) {
+                    string suffix = special.Contains(point) ? "力&8(悲" : "啦! &e\\^o^/";
+                    Terminal.WriteLine($"&aHey!&7您已经运行过&2{point}&7次&9&oLevitate&r&7脚本{suffix}");
+                    Terminal.WriteLine("&7如果您愿意的话,可以前往&6爱发电&7支持我们 &b(～￣▽￣)～");
+                    Terminal.WriteLine($"&7{Extension.DonatingStatic}");
+                    last = point;
+                    triggered = true;
+                    break;
+                }
+            }
+            lines[1] = last.ToString();
+            File.WriteAllLines(path,lines);
+            return triggered;
+        }
+        catch {
+            //ignored
+            return false;
+        }
+    }
+    
     static void GlobalExceptionHandler(object sender, UnhandledExceptionEventArgs ea) {
         Exception e = (Exception)ea.ExceptionObject;
         ChainedTerminal ct = new ChainedTerminal("&l&4CRASHED");

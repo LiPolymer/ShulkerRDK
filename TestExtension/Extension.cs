@@ -1,6 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Windows.Input;
-using ShulkerRDK;
 using ShulkerRDK.Shared;
 
 namespace TestExtension;
@@ -18,6 +16,7 @@ public class Extension : IShulkerExtension {
         });
         
         LevitateMethods.Add("break",(_,_) => {
+            //蓄意引发错误
             string[] s = ["aa","bb"];
             Console.WriteLine(s[2]);
             return null;
@@ -29,7 +28,7 @@ public class Extension : IShulkerExtension {
             }
         });
 
-        Commands.Add("platform",(strings,_) => {
+        Commands.Add("platform",(_,_) => {
             Console.WriteLine(RuntimeInformation.OSArchitecture);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 Console.WriteLine("当前平台是 Windows");
@@ -42,7 +41,7 @@ public class Extension : IShulkerExtension {
             }
         });
 
-        Commands.Add("mfs",(strings,context) => {
+        Commands.Add("mfs",(_,_) => {
             //ChainedTerminal ct = new ChainedTerminal("mfs");
             //if (!Tools.CheckParamLength(strings,1,ct)) return;
             var watcher = new FolderWatcher();
@@ -81,7 +80,7 @@ public class Extension : IShulkerExtension {
 }
 
 public class FolderWatcher {
-    FileSystemWatcher _watcher;
+    FileSystemWatcher? _watcher;
 
     public void StartWatching(string folderPath) {
         _watcher = new FileSystemWatcher {

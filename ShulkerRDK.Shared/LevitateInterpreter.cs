@@ -1,4 +1,6 @@
-﻿namespace ShulkerRDK.Shared;
+﻿using System.Runtime.InteropServices;
+
+namespace ShulkerRDK.Shared;
 
 public class LevitateInterpreter {
     public LevitateInterpreter(ShulkerContext shulkerContext) {
@@ -16,7 +18,7 @@ public class LevitateInterpreter {
                 Terminal.WriteLine("&9&oLevitate",$"自动环境变量&8[&7{kvp.Key}&8]&r被项目环境变量覆写");
                 _envVars[kvp.Key] = kvp.Value;
             } else {
-                _envVars.Add(kvp.Key, kvp.Value);   
+                _envVars.Add(kvp.Key,kvp.Value);
             }
         }
     }
@@ -28,58 +30,59 @@ public class LevitateInterpreter {
     readonly Dictionary<string,string> _vars = [];
 
     public void RunFromFile(string path) {
-        Run(File.ReadAllLines(path),Path.GetDirectoryName(path)!,Path.GetFileNameWithoutExtension(path));
+        Run(File.ReadAllLines(path),System.IO.Path.GetDirectoryName(path)!,System.IO.Path.GetFileNameWithoutExtension(path));
     }
 
     void Run(string[] sentences,string workingDir = "./",string name = "???",bool catchExecutionError = true) {
-            int index = 0;
-            foreach (string sentence in sentences) {
-                try {
-                    index++;
-                    if (sentence.StartsWith('#') | sentence.StartsWith(' ') | sentence == "") continue;
-            
-                    //// 处理插入内容
-                    // 注入变量
-                    string postVariable = Tools.EscapeDictResolver(sentence,_vars,"^");
-                    // 注入别名
-                    postVariable = Tools.AliasResolver(postVariable,Aliases);
-                    // 注入环境变量
-                    postVariable = Tools.EscapeDictResolver(postVariable,_envVars,"%");
-                    // 注入表达式
-                    int myIndex = index;
-                    string expression = Tools.CrateReplacer(postVariable,"{","}",s =>
-                                                                ExecuteMethod(s,new LevitateExecutionContext {
-                                                                    WorkingDir = workingDir,
-                                                                    CurrentLine = myIndex,
-                                                                    Logger = new LevitateLogger(myIndex,name),
-                                                                    ShulkerContext = _shulkerContext,
-                                                                    Interpreter = this,
-                                                                    EnvVars = _envVars,
-                                                                    Vars = _vars
-                                                                }) ?? "null");
-                    //// 执行
-                    ExecuteMethod(expression,new LevitateExecutionContext {
-                        WorkingDir = workingDir,
-                        CurrentLine = index,
-                        Logger = new LevitateLogger(index,name),
-                        ShulkerContext = _shulkerContext,
-                        Interpreter = this,
-                        EnvVars = _envVars,
-                        Vars = _vars
-                    });
-                }
-                catch (Exception e) {
-                    if (catchExecutionError) {
-                        LevitateLogger ll = new LevitateLogger(index,name);
-                        Tools.DisplayException(e,ll,Terminal.MessageType.Error);
-                        ll.WriteLine($"&7由&8[&7{sentence}&8]&7引发",Terminal.MessageType.Error);
-                        Terminal.WriteLine("&9&oLevitate","&c已中断脚本执行",Terminal.MessageType.Error);
-                    } else {
-                        throw;
-                    }
-                    break;
-                }
+        CountExecution();
+        int index = 0;
+        foreach (string sentence in sentences) {
+            try {
+                index++;
+                if (sentence.StartsWith('#') | sentence.StartsWith(' ') | sentence == "") continue;
+
+                //// 处理插入内容
+                // 注入变量
+                string postVariable = Tools.EscapeDictResolver(sentence,_vars,"^");
+                // 注入别名
+                postVariable = Tools.AliasResolver(postVariable,Aliases);
+                // 注入环境变量
+                postVariable = Tools.EscapeDictResolver(postVariable,_envVars,"%");
+                // 注入表达式
+                int myIndex = index;
+                string expression = Tools.CrateReplacer(postVariable,"{","}",s =>
+                                                            ExecuteMethod(s,new LevitateExecutionContext {
+                                                                WorkingDir = workingDir,
+                                                                CurrentLine = myIndex,
+                                                                Logger = new LevitateLogger(myIndex,name),
+                                                                ShulkerContext = _shulkerContext,
+                                                                Interpreter = this,
+                                                                EnvVars = _envVars,
+                                                                Vars = _vars
+                                                            }) ?? "null");
+                //// 执行
+                ExecuteMethod(expression,new LevitateExecutionContext {
+                    WorkingDir = workingDir,
+                    CurrentLine = index,
+                    Logger = new LevitateLogger(index,name),
+                    ShulkerContext = _shulkerContext,
+                    Interpreter = this,
+                    EnvVars = _envVars,
+                    Vars = _vars
+                });
             }
+            catch (Exception e) {
+                if (catchExecutionError) {
+                    LevitateLogger ll = new LevitateLogger(index,name);
+                    Tools.DisplayException(e,ll,Terminal.MessageType.Error);
+                    ll.WriteLine($"&7由&8[&7{sentence}&8]&7引发",Terminal.MessageType.Error);
+                    Terminal.WriteLine("&9&oLevitate","&c已中断脚本执行",Terminal.MessageType.Error);
+                } else {
+                    throw;
+                }
+                break;
+            }
+        }
     }
 
     string? ExecuteMethod(string methodString,LevitateExecutionContext ec) {
@@ -92,6 +95,30 @@ public class LevitateInterpreter {
         ec.Logger.AddNode("&9&oLevitate");
         ec.Logger.WriteLine($"&c未能找到已注册的方法&8[&c{command[0]}&8]",Terminal.MessageType.Error);
         return null;
+    }
+
+    static readonly string CheckpointPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\ShulkerRDK\executionCount.dat";
+    static void CountExecution() {
+        try {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
+            int count = 0;
+            if (!Directory.Exists(System.IO.Path.GetDirectoryName(CheckpointPath))) {
+                Directory.CreateDirectory(System.IO.Path.GetDirectoryName(CheckpointPath)!);
+            }
+            string[] lines = ["0","0"];
+            if (File.Exists(CheckpointPath)) {
+                lines = File.ReadAllLines(CheckpointPath);
+                count = Convert.ToInt32(lines[0]);
+            }
+            if (count < int.MaxValue - 10) {
+                count++;
+            }
+            lines[0] = count.ToString();
+            File.WriteAllLines(CheckpointPath,lines);
+        }
+        catch {
+            //ignored
+        }
     }
 }
 

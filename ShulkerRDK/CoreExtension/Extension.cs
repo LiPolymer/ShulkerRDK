@@ -65,7 +65,8 @@ public class Extension : ExtensionBase {
     public override string Version { get => VersionStatic; }
     public static string VersionStatic { get => "Dev"; }
     public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
-    public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
+    public override string Donating { get => DonatingStatic; }
+    public static string DonatingStatic { get => "https://afdian.tv/a/lipolymer"; }
     public override string AsciiArt { get => AsciiArtStatic; }
 
     public static string AsciiArtStatic { get => "&l" + """
