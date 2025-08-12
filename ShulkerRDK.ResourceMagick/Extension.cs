@@ -29,7 +29,7 @@ public class Extension : ExtensionBase {
     public override string Name { get => "ResourceMagick"; }
     public override string Description { get => "用于 ShulkerRDK 的 Image Magick 集成"; }
     public override string Author { get => "LiPolymer"; }
-    public override string Version { get => "Dev"; }
+    public override string Version { get => "B0.10"; }
     public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
     public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
     public override string AsciiArt { get => """

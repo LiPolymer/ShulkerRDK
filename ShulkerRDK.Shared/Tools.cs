@@ -303,7 +303,7 @@ public static class NugetHelper {
                 Directory.CreateDirectory("./shulker/local/libs");
             }
             ChainedTerminal logger = new ChainedTerminal("&9Nuget");
-            logger.WriteLine($"正在获取包&8[&7{packageIdentifier}&8]");
+            logger.WriteLine($"&7正在获取包&8[&7{packageIdentifier}&8]");
             const string cache = "./shulker/local/cache/";
             string pkgCache = $"{cache}{packageIdentifier.Split('/')[0]}.nupkg";
             string extCache = $"{cache}{packageIdentifier.Split('/')[0]}/";

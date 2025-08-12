@@ -16,7 +16,7 @@ public class Extension : ExtensionBase {
     public override string Name { get => "ModrinthPSK"; }
     public override string Description { get => "添加Modrinth平台支持"; }
     public override string Author { get => "LiPolymer"; }
-    public override string Version { get => "Dev.Inf"; }
+    public override string Version { get => "B0.10"; }
     public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
     public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
 
