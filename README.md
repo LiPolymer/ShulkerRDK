@@ -4,7 +4,7 @@
 
 *Modular low code SDK / resource composer for Minecraft*
 
-Still under development...
+You can use this tool by using [this template](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)
 
 ## Overview
 

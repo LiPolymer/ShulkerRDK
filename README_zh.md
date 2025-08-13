@@ -2,9 +2,9 @@
 
 [English](README.md)
 
-*面向Minecraft的模块化低代码SDK/资源合成工具*
+*面向Minecraft的模块化低代码SDK/资源装配工具*
 
-仍在开发中...
+您可以通过使用[这个模板](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)来使用这个工具
 
 ## 概述
 
