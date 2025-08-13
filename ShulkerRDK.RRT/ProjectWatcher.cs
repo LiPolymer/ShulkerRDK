@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text.RegularExpressions;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.RRT;
@@ -16,19 +17,19 @@ public static class ProjectWatcher {
         return null;
     }
 
+    static string? _eventFilter = null;
     static void Transition(string[] args,ShulkerContext sc, IChainedLikeTerminal ct) {
         if (!Tools.TryGetSub(["start","stop"],args,1,ct)) return;
         string target = sc.ProjectConfig!.RootPath;
-        string filter = "*";
         if (Tools.CheckParamLength(args,2)) {
-            filter = args[2];
+            _eventFilter = args[2];
         }
         if (Tools.CheckParamLength(args,3)) {
             target = args[3];
         }
         switch (args[1]) {
             case "start":
-                StartWatching(target,filter,ct);
+                StartWatching(target,"*",ct);
                 break;
             case "stop":
                 StopWatching(ct);
@@ -55,23 +56,30 @@ public static class ProjectWatcher {
         _watcher.Deleted += OnFileChanged;
         _watcher.Renamed += OnRenamed;
         _watcher.Error += OnError;
-
-        _watcher.Created += OnChangeCaptured;
-        _watcher.Changed += OnChangeCaptured;
-        _watcher.Deleted += OnChangeCaptured;
-        _watcher.Renamed += OnChangeCaptured;
         
         _watcher.EnableRaisingEvents = true;
         ct?.WriteLine($"&7开始监视&8[&7{folderPath}&8]");
     }
 
     static void OnFileChanged(object sender,FileSystemEventArgs e) {
-        Console.WriteLine();
+        if (Directory.Exists(e.FullPath)) return;
         Ct.WriteLine($"&8{e.ChangeType}: {e.FullPath}",Terminal.MessageType.Debug);
+        string evt = e.ChangeType switch {
+                WatcherChangeTypes.Changed => "changed",
+                WatcherChangeTypes.Created => "created",
+                WatcherChangeTypes.Deleted => "deleted",
+                _ => throw new ArgumentOutOfRangeException()
+            } + $"|{e.FullPath}";
+        if (_eventFilter != null && !new Regex(_eventFilter).IsMatch(evt)) return;
+        Ct.WriteLine("&7CAPTURED",Terminal.MessageType.Debug);
+        OnChangeCaptured(evt);
     }
     static void OnRenamed(object sender,RenamedEventArgs e) {
-        Console.WriteLine();
+        if (Directory.Exists(e.FullPath)) return;
         Ct.WriteLine($"&8重命名: {e.OldFullPath} -> {e.FullPath}",Terminal.MessageType.Debug);
+        if (_eventFilter != null && !new Regex(_eventFilter).IsMatch($"renamed|{e.FullPath}")) return;
+        Ct.WriteLine("&7CAPTURED",Terminal.MessageType.Debug);
+        OnChangeCaptured($"renamed|{e.FullPath}|{e.OldFullPath}");
     }
     static void OnError(object sender,ErrorEventArgs e) {
         Console.WriteLine();
@@ -79,29 +87,29 @@ public static class ProjectWatcher {
         Terminal.Write("&8[&c结束&7>&e");
     }
 
-    static void OnChangeCaptured(object sender,RenamedEventArgs e) {
-        OnChangeCaptured();
-    }
-    static void OnChangeCaptured(object sender,FileSystemEventArgs e) {
-        OnChangeCaptured();
-    }
-    static void OnChangeCaptured(string? path = null) {
+    static void OnChangeCaptured(string evt = "") {
         TriggerState = true;
+        _changedEvent = evt;
     }
     static bool _triggerState;
     static bool TriggerState {
         set {
             if (_triggerState == value) return;
             _triggerState = value;
-            if (value) new Thread(OnChangeHandling).Start();
+            if (value) new Thread(()=> {
+                OnChangeHandling(_changedEvent);
+            }).Start();
         }
     }
 
+    static string _changedEvent = "";
+    
     const string LvtPath = "./shulker/tasks/hotDeploy.lvt";
-    static void OnChangeHandling() {
+    static void OnChangeHandling(string evt) {
         Thread.Sleep(800);
         LevitateInterpreter li = new LevitateInterpreter(Context!);
         if (File.Exists(LvtPath)) {
+            li.EnvVars.Add("rrt.file",evt);
             li.RunFromFile(LvtPath);
             Terminal.Write("&8[&a执行结束&7>&e");
         } else {
@@ -113,7 +121,7 @@ public static class ProjectWatcher {
     static void StopWatching(IChainedLikeTerminal? ct = null) {
         if (_watcher == null) return;
         ct?.WriteLine("&7停止监视...");
-        _watcher?.Dispose();
+        _watcher.Dispose();
         _watcher = null;
     }
 }
