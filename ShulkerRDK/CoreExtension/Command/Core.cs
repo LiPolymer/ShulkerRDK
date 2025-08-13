@@ -28,18 +28,18 @@ public static class Core {
             case "get":
                 if (!Tools.CheckParamLength(args,2,logger)) return;
                 if (sc.ProjectConfig!.DefaultEnvVars.TryGetValue(args[2],out string? envVar)) {
-                    logger.WriteLine($"项目环境变量&8[&7{args[2]}&8]>[&7{envVar}&8]");
+                    logger.WriteLine($"&7项目环境变量&8[&7{args[2]}&8]>[&7{envVar}&8]");
                 } else {
-                    logger.WriteLine($"未定义的项目环境变量&8[&c{args[2]}&8]",Terminal.MessageType.Warn);   
+                    logger.WriteLine($"&7未定义的项目环境变量&8[&c{args[2]}&8]",Terminal.MessageType.Warn);   
                 }
                 return;
             case "set":
                 if (!Tools.CheckParamLength(args,3,logger)) return;
                 if (sc.ProjectConfig!.DefaultEnvVars.TryGetValue(args[2],out string? _)) {
-                    logger.WriteLine($"已将项目环境变量&8[&7{args[2]}&8]&7修改&8为[&7{args[3]}&8]");
+                    logger.WriteLine($"&7已将项目环境变量&8[&7{args[2]}&8]&7修改为&8[&7{args[3]}&8]");
                     sc.ProjectConfig!.DefaultEnvVars[args[2]] = args[3];
                 } else {
-                    logger.WriteLine($"已将项目环境变量&8[&7{args[2]}&8]定义为[&7{args[3]}&8]");
+                    logger.WriteLine($"&8[&7{args[2]}&8]&7定义为&8[&7{args[3]}&8]");
                     sc.ProjectConfig!.DefaultEnvVars.Add(args[2],args[3]);
                 }
                 sc.ProjectConfig!.Save();
@@ -50,7 +50,7 @@ public static class Core {
                 sc.ProjectConfig!.Save();
                 return;
             case "list":
-                logger.WriteLine("所有项目环境变量:");
+                logger.WriteLine("&7所有项目环境变量:");
                 foreach (KeyValuePair<string,string> kvp in sc.ProjectConfig!.DefaultEnvVars) {
                     Terminal.WriteLine("",$" - &8[&7{kvp.Key}&8]>[&7{kvp.Value}&8]");
                 }

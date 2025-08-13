@@ -33,6 +33,11 @@ public class Extension : ExtensionBase {
         LevitateMethods.Add("flat",Levitate.Core.Flatten);
         LevitateMethods.Add("verm",Levitate.Core.VersionControl);
         LevitateMethods.Add("netfile",Levitate.Core.NetFile);
+        LevitateMethods.Add("check",Levitate.Core.Check);
+        LevitateMethods.Add("path",Levitate.Core.PathUtil);
+        LevitateMethods.Add("list",Levitate.Core.ListResolver);
+        LevitateMethods.Add("regex",Levitate.Core.RegexResolver);
+        LevitateMethods.Add("not",Levitate.Core.Not);
         //独立
         LevitateMethods.Add("pkgr",Levitate.Packager.Method);
         
@@ -55,7 +60,7 @@ public class Extension : ExtensionBase {
         //Levitate方法
         LevitateAliases.Add("^makeCleanup$","delete \"%project.cache%\"");
         LevitateAliases.Add("^makeCopy","copy \"%project.src%\" \"%project.cache%\" true ");
-        LevitateAliases.Add("^makePkg$","pkgr zip make \"%project.cache%\" \"%project.output%%project.name%.zip\"");
+        LevitateAliases.Add("^makePkg$","pkgr zip make \"%project.cache%\" \"%project.output%%project.name%_%project.ver%.zip\"");
     }
     
     public override string Id { get => "shulker.core"; }

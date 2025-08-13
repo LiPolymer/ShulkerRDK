@@ -8,17 +8,17 @@ public class LevitateInterpreter {
         IShulkerExtension core = _shulkerContext.Extensions["shulker.core"];
         Tools.MergeDict(Methods,core.LevitateMethods);
         Tools.MergeDict(Aliases,core.LevitateAliases);
-        _envVars.Add("project.src",shulkerContext.ProjectConfig!.RootPath);
-        _envVars.Add("project.name",shulkerContext.ProjectConfig!.ProjectName);
-        _envVars.Add("project.output",shulkerContext.ProjectConfig!.OutPath);
-        _envVars.Add("project.ver",shulkerContext.ProjectConfig!.Version);
-        _envVars.Add("project.cache","./shulker/local/cache/build");
+        EnvVars.Add("project.src",shulkerContext.ProjectConfig!.RootPath);
+        EnvVars.Add("project.name",shulkerContext.ProjectConfig!.ProjectName);
+        EnvVars.Add("project.output",shulkerContext.ProjectConfig!.OutPath);
+        EnvVars.Add("project.ver",shulkerContext.ProjectConfig!.Version);
+        EnvVars.Add("project.cache","./shulker/local/cache/build");
         foreach (KeyValuePair<string,string> kvp in shulkerContext.ProjectConfig!.DefaultEnvVars) {
-            if (_envVars.ContainsKey(kvp.Key)) {
+            if (EnvVars.ContainsKey(kvp.Key)) {
                 Terminal.WriteLine("&9&oLevitate",$"自动环境变量&8[&7{kvp.Key}&8]&r被项目环境变量覆写");
-                _envVars[kvp.Key] = kvp.Value;
+                EnvVars[kvp.Key] = kvp.Value;
             } else {
-                _envVars.Add(kvp.Key,kvp.Value);
+                EnvVars.Add(kvp.Key,kvp.Value);
             }
         }
     }
@@ -26,7 +26,7 @@ public class LevitateInterpreter {
     readonly ShulkerContext _shulkerContext;
     public readonly Dictionary<string,LevitateMethod> Methods = [];
     public readonly Dictionary<string,string> Aliases = [];
-    readonly Dictionary<string,string> _envVars = [];
+    public readonly Dictionary<string,string> EnvVars = [];
     readonly Dictionary<string,string> _vars = [];
 
     public void RunFromFile(string path) {
@@ -47,7 +47,7 @@ public class LevitateInterpreter {
                 // 注入别名
                 postVariable = Tools.AliasResolver(postVariable,Aliases);
                 // 注入环境变量
-                postVariable = Tools.EscapeDictResolver(postVariable,_envVars,"%");
+                postVariable = Tools.EscapeDictResolver(postVariable,EnvVars,"%");
                 // 注入表达式
                 int myIndex = index;
                 string expression = Tools.CrateReplacer(postVariable,"{","}",s =>
@@ -57,7 +57,7 @@ public class LevitateInterpreter {
                                                                 Logger = new LevitateLogger(myIndex,name),
                                                                 ShulkerContext = _shulkerContext,
                                                                 Interpreter = this,
-                                                                EnvVars = _envVars,
+                                                                EnvVars = EnvVars,
                                                                 Vars = _vars
                                                             }) ?? "null");
                 //// 执行
@@ -67,7 +67,7 @@ public class LevitateInterpreter {
                     Logger = new LevitateLogger(index,name),
                     ShulkerContext = _shulkerContext,
                     Interpreter = this,
-                    EnvVars = _envVars,
+                    EnvVars = EnvVars,
                     Vars = _vars
                 });
             }
@@ -84,10 +84,13 @@ public class LevitateInterpreter {
             }
         }
     }
-
+    
     string? ExecuteMethod(string methodString,LevitateExecutionContext ec) {
         //Tokenize并执行
-        string[] command = Tools.ResolveArgs(methodString);
+        return ExecuteMethod(Tools.ResolveArgs(methodString),ec);
+    }
+
+    public string? ExecuteMethod(string[] command,LevitateExecutionContext ec) {
         if (command.Length == 0) return null;
         if (Methods.TryGetValue(command[0],out LevitateMethod? method)) {
             return method(command,ec);
@@ -96,7 +99,7 @@ public class LevitateInterpreter {
         ec.Logger.WriteLine($"&c未能找到已注册的方法&8[&c{command[0]}&8]",Terminal.MessageType.Error);
         return null;
     }
-
+    
     static readonly string CheckpointPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\ShulkerRDK\executionCount.dat";
     static void CountExecution() {
         try {

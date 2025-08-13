@@ -347,4 +347,87 @@ public static class Core {
         }
         return null;
     }
+
+    public static string? Check(string[] args,LevitateExecutionContext ec) {
+        if (!Tools.CheckParamLength(args,1,ec.Logger)) return null;
+        if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+        if (args[1] != "true") return null;
+        List<string> argsList = args.ToList();
+        argsList.RemoveRange(0,2);
+        return ec.Interpreter.ExecuteMethod(argsList.ToArray(),ec);
+    }
+
+    public static string? PathUtil(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&aPath");
+        LevitateLogger logger = ec.Logger;
+        if (!Tools.TryGetSub(["remapper","dir","isdir"],args,1,logger)) return null;
+        switch (args[1]) {
+            case "remapper":
+                if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+                if (!Tools.CheckParamLength(args,3,ec.Logger)) return null;
+                if (!Tools.CheckParamLength(args,4,ec.Logger)) return null;
+                // 2:base 3:target 4:dest
+                string relativePath = Path.GetRelativePath(args[2],args[3]);
+                string destPath = Path.Combine(args[4],relativePath);
+                if (Tools.CheckParamLength(args,5)) {
+                    destPath = Path.ChangeExtension(destPath,args[5]);
+                }
+                return destPath;
+            case "dir":
+                if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+                return Path.GetDirectoryName(args[2]);
+            case "isdir":
+                if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+                return Directory.Exists(args[2]) ? "true" : "false";
+        }
+        return null;
+    }
+
+    public static string? ListResolver(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&aList");
+        LevitateLogger logger = ec.Logger;
+        if (!Tools.TryGetSub(["get","set"],args,1,logger)) return null;
+        if (!Tools.CheckParamLength(args,2,ec.Logger)) return null;
+        if (!Tools.CheckParamLength(args,3,ec.Logger)) return null;
+        switch (args[1]) {
+            case "get":
+                string[] cache = args[2].Split('|');
+                return cache[Convert.ToInt32(args[3])];
+            case "set":
+                if (!Tools.CheckParamLength(args,4,ec.Logger)) return null;
+                string[] cache2 = args[2].Split('|');
+                cache2[Convert.ToInt32(args[3])] = args[4];
+                return string.Join('|',cache2);
+            case "add":
+                List<string> cache3 = args[2].Split('|').ToList();
+                cache3.Add(args[3]);
+                return string.Join('|',cache3);
+        }
+        return null;
+    }
+
+    public static string? RegexResolver(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&cRegex");
+        LevitateLogger logger = ec.Logger;
+        if (!Tools.CheckParamLength(args,1,ec.Logger)) return null;
+        if (!Tools.TryGetSub(["match","replace"],args,2,logger)) return null;
+        if (!Tools.CheckParamLength(args,3,ec.Logger)) return null;
+        switch (args[2]) {
+            case "match":
+                return new Regex(args[1]).IsMatch(args[3]) ? "true" : "false";
+            case "replace":
+                if (!Tools.CheckParamLength(args,4,ec.Logger)) return null;
+                return new Regex(args[1]).Replace(args[3],args[4]);
+        }
+        return null;
+    }
+
+    public static string? Not(string[] args,LevitateExecutionContext ec) {
+        if (!Tools.CheckParamLength(args,1,ec.Logger)) return null;
+        return args[1] switch {
+            "true" => "false",
+            "false" => "true",
+            _ => null
+        };
+    }
 }
