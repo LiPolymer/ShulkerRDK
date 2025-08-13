@@ -33,7 +33,7 @@ public static class PsdConverter {
             if (args.Length > 2) {
                 imagePath = args[2];
             }
-            ec.Logger.WriteLine($"&7正在转换&8[&7{psdPath}&8]>[{imagePath}&8]");
+            ec.Logger.WriteLine($"&7正在转换&8[&7{psdPath}&8]>[&7{imagePath}&8]");
             using MagickImage image = new MagickImage(psdPath);
             image.Write(imagePath);
         } else {
