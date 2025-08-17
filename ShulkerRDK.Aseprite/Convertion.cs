@@ -1,4 +1,5 @@
-﻿using AsepriteDotNet;
+﻿using System.ComponentModel;
+using AsepriteDotNet;
 using AsepriteDotNet.Aseprite;
 using AsepriteDotNet.Aseprite.Types;
 using AsepriteDotNet.IO;
@@ -9,12 +10,17 @@ namespace ShulkerRDK.Aseprite;
 
 public static class Convertion {
     public static string? Method(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&bAseprite");
         Convert(args,ec.Logger);
         return null;
     }
+
+    [Description("转换 Aseprite 文件")]
+    public static void Command(string[] args,ShulkerContext shulkerContext) {
+        Convert(args,new ChainedTerminal("&bAseprite"));
+    }
     
     static void Convert(string[] args, IChainedLikeTerminal? ct = null) {
-        ct?.AddNode("&bAseprite");
         if (!Tools.CheckParamLength(args,1,ct)) return;
         string asePath = args[1];
         string imagePath;
