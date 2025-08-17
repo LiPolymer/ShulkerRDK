@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShulkerRDK.Modrinth", "Shul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShulkerRDK.RRT", "ShulkerRDK.RRT\ShulkerRDK.RRT.csproj", "{97FD3E8F-98E6-46FB-B14E-FD23B0EE652E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShulkerRDK.Aseprite", "ShulkerRDK.Aseprite\ShulkerRDK.Aseprite.csproj", "{28F0AC93-3BF8-4595-A0BE-ACF704D71C78}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{97FD3E8F-98E6-46FB-B14E-FD23B0EE652E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97FD3E8F-98E6-46FB-B14E-FD23B0EE652E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97FD3E8F-98E6-46FB-B14E-FD23B0EE652E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28F0AC93-3BF8-4595-A0BE-ACF704D71C78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28F0AC93-3BF8-4595-A0BE-ACF704D71C78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28F0AC93-3BF8-4595-A0BE-ACF704D71C78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28F0AC93-3BF8-4595-A0BE-ACF704D71C78}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

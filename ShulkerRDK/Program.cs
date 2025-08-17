@@ -242,6 +242,7 @@ static class Program {
         fileList.Add(@"..\..\..\..\ShulkerRDK.ResourceMagick\bin\Debug\net8.0\ShulkerRDK.ResourceMagick.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.Modrinth\bin\Debug\net8.0\ShulkerRDK.Modrinth.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.RRT\bin\Debug\net8.0\ShulkerRDK.RRT.dll");
+        fileList.Add(@"..\..\..\..\ShulkerRDK.Aseprite\bin\Debug\net8.0\ShulkerRDK.Aseprite.dll");
         #endif
         
         files = fileList.ToArray();
