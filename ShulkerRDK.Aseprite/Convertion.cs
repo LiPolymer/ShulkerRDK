@@ -69,7 +69,8 @@ public static class Convertion {
             //if (layer.IsBackgroundLayer) continue;
             if (layer is AsepriteTilemapLayer) continue;
             if (layer.Name == "#disableBase") {
-
+                isBaseDisabled = true;
+                continue;
             }
             if (!layer.Name.Contains('#')) Includer("#noTag",index,layer.Name,layerMatrix);
             else {
