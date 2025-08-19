@@ -38,6 +38,7 @@ public class Extension : ExtensionBase {
         LevitateMethods.Add("list",Levitate.Core.ListResolver);
         LevitateMethods.Add("regex",Levitate.Core.RegexResolver);
         LevitateMethods.Add("not",Levitate.Core.Not);
+        LevitateMethods.Add("ifr",Levitate.Core.InFileReplacer);
         //独立
         LevitateMethods.Add("pkgr",Levitate.Packager.Method);
         

@@ -14,9 +14,8 @@ public static class Packager {
         }
         ec.Logger.AddNode("&l&dPkgR");
         if (!Tools.TryGetSub(["zip","tar"],args,1,ec)) return null;
-        if (!Tools.TryGetSub(["make","tear"],args,2,ec)) return null;
+        if (!Tools.TryGetSub(_actions.Select(e => e.Key).ToList(),args,2,ec)) return null;
         
-        //TODO: 于此处注入环境变量
         if (!Tools.CheckParamLength(args, 3, ec)) return null;
         if (!Tools.CheckParamLength(args, 4, ec)) return null;
         

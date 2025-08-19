@@ -430,4 +430,17 @@ public static class Core {
             _ => null
         };
     }
+
+    public static string? InFileReplacer(string[] args,LevitateExecutionContext ec) {
+        ec.Logger.AddNode("&7&oIFR");
+        if (!Tools.CheckParamLength(args,1,ec.Logger)) return null; //match
+        if (!Tools.CheckParamLength(args,2,ec.Logger)) return null; //replace
+        if (!Tools.CheckParamLength(args,3,ec.Logger)) return null; //file
+        if (!File.Exists(args[3])) {
+            ec.Logger.WriteLine("&c文件不存在",Terminal.MessageType.Error);
+            return null;
+        }
+        File.WriteAllText(args[3],File.ReadAllText(args[3]).Replace(args[0],args[1]));
+        return null;
+    }
 }
