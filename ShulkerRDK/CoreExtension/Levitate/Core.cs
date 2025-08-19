@@ -162,7 +162,7 @@ public static class Core {
                     return null;
                 }
             }
-            ec.Logger.WriteLine($"&7正在移动&8[&7{Path.GetFileName(src)}&8]");
+            ec.Logger.WriteLine($"&7正在复制&8[&7{Path.GetFileName(src)}&8]");
             dest = Path.Combine(Path.GetDirectoryName(src)!,Path.GetFileNameWithoutExtension(src) + ".png");
             if (args.Length > 2) {
                 dest = args[2];
