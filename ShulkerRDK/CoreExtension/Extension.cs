@@ -69,7 +69,7 @@ public class Extension : ExtensionBase {
     public override string Description { get => "built-in toolset of ShulkerRDK"; }
     public override string Author { get => "LiPolymer"; }
     public override string Version { get => VersionStatic; }
-    public static string VersionStatic { get => "B0.15"; }
+    public static string VersionStatic { get => "B0.16"; }
     public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
     public override string Donating { get => DonatingStatic; }
     public static string DonatingStatic { get => "https://afdian.tv/a/lipolymer"; }
