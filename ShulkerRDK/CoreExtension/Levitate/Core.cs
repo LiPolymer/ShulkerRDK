@@ -440,7 +440,7 @@ public static class Core {
             ec.Logger.WriteLine("&c文件不存在",Terminal.MessageType.Error);
             return null;
         }
-        File.WriteAllText(args[3],File.ReadAllText(args[3]).Replace(args[0],args[1]));
+        File.WriteAllText(args[3],File.ReadAllText(args[3]).Replace(args[1],args[2]));
         return null;
     }
 }
