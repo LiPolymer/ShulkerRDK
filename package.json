@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "docs:dev": "vitepress dev ShulkerRDK.Docs",
+    "docs:build": "vitepress build ShulkerRDK.Docs",
+    "docs:preview": "vitepress preview ShulkerRDK.Docs"
+  }
+}

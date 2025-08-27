@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DeveloperToolsToolWindowSettingsV1" lastSelectedContentNodeId="ascii-art" pluginVersion="7.1.0">
+    <developerToolsConfigurations>
+      <developerToolConfiguration developerToolId="ascii-art" id="1593d3ed-2636-4716-96ab-ad0bb97c2757" name="Workbench">
+        <properties>
+          <property key="textInput" type="INPUT" value="kotlin.String|ShulkerRRT" />
+          <property key="selectedFontFileName" type="CONFIGURATION" value="kotlin.String|threepoint.flf" />
+        </properties>
+      </developerToolConfiguration>
+    </developerToolsConfigurations>
+    <expandedGroupNodeIds />
+  </component>
+</project>
