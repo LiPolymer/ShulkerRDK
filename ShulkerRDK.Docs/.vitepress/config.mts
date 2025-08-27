@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "ShulkerRDK",
+  base: "/ShulkerRDK/",
   description: "下一代MC低代码内容开发工具链",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
