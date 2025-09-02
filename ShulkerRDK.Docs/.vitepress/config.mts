@@ -2,28 +2,37 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "ShulkerRDK",
+  title: "ShulkerRDK Docs",
   base: "/ShulkerRDK/",
-  description: "下一代MC低代码内容开发工具链",
+  description: "下一代MC低代码内容开发工具",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: 'GitLab', link: 'https://gitlab.com/LiPolymer/ShulkerRDK' }
     ],
 
     sidebar: [
       {
-        text: 'Examples',
+        text: '快速开始',
+        link: '/quickGuides',
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
+          { text: '资源包', link: '/quickGuides/resourcepack' },
+          { text: '整合包', link: '/quickGuides/modpack' }
+        ]
+      },
+      {
+        text: '手册',
+        items: [
+          { text: '总览', link: '/brochure/overview' }
         ]
       }
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-    ]
+      { icon: 'github', link: 'https://github.com/LiPolymer/ShulkerRDK' }
+    ],
+
+    logo: '/images/srdk.svg'
   }
 })

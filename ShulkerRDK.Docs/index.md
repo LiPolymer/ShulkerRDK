@@ -4,15 +4,17 @@ layout: home
 
 hero:
   name: "ShulkerRDK"
-  text: "下一代MC低代码内容开发工具链"
-  tagline: My great project tagline
+  text: ""
+  tagline: 下一代MC低代码内容开发工具
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: 快速开始
+      link: /quickGuides
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: 阅读手册
+      link: /brochure/overview
+  image:
+    src: /images/srdk.svg
 
 features:
   - title: Feature A
