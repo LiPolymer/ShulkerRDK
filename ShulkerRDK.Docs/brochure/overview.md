@@ -19,29 +19,36 @@ ShulkerRDK 是一个为 Minecraft 设计的低代码开发工具, 当前具有�
 - Levitate Tasks
 - 启动参数
 
-您可以通过启动参数来执行指令或 Levitate Tasks
+> 您可以通过启动参数来执行指令或 Levitate Tasks
+>
+> 也可以使用指令来执行 Levitate Tasks
 
-也可以使用指令来执行 Levitate Tasks
+在今后的使用中, 您将经常与指令 (交互模式) 打交道, 您可以在这里完成大多数需要手动进行的操作
 
-### 主要优势
+Levitate Tasks 则是 ShulkerRDK 实现自动化和客制化的主要工具
+
+请转到[下一节](./interaction.md), 让我为您详细讲解 ShulkerRDK 的交互细节
+
+::: details **了解 ShulkerRDK 的更多总体细节**
+
+#### 主要优势
 
 - **模块化架构**：基于扩展系统的架构设计, 可以根据需要选择和定制扩展模块
-- **低代码开发**：使用 Levitate Tasks 这一指令式 DSL, 通过定义一系列命令来指导 ShulkerRDK 自动地完成较为复杂的任务
-- **自动化流程**：简化 Minecraft 相关资源的开发、打包和部署流程
-- **实时重载**：提供文件监控和实时重载功能，提高开发效率
+- **客制化工作流**：使用 Levitate Tasks 这一指令式 DSL, 通过定义一系列命令来指导 ShulkerRDK 自动地完成较为复杂的任务
+- **自动化流程**：简化 Minecraft 相关资源的开发、打包、测试和部署流程, 在 Git 存储库提供完善的 CI/CD 支持
+- **实时重载**：与 Minecraft 联动, 提供文件监控和实时重载功能，提高开发效率
 
-## 程序架构
+#### 程序架构
 
-ShulkerRDK 采用模块化架构设计，由一个核心框架, 核心扩展(内置)和多个第一方扩展(外置, 需要额外安装)组成:
+ShulkerRDK 采用模块化架构设计，由一个核心框架, 核心扩展(内置)和多个第一方扩展(外置, 需要额外安装)组成
 
-
-### 第一方扩展
+#### 第一方扩展
 - **ResourceMagick**：图像处理功能, 当前支持 `.psd` 格式资源转换
 - **AsepriteConverter**：Aseprite 文件格式转换支持
 - **ModrinthPSK**：Modrinth 平台集成，支持整合包打包与 Modrinth 文件托管
 - **ShulkerRRT**：实时重载和文件监控功能, 与 Minecraft 同名 mod 提供联动支持
 
-## 适用场景
+#### 适用场景
 
 ShulkerRDK 适用于以下开发场景：
 
@@ -51,3 +58,5 @@ ShulkerRDK 适用于以下开发场景：
 4. **CI/CD** 自动构建, 为用户带来最新变更
 
 通过使用 ShulkerRDK, 开发者可以专注于创作内容，而将重复性的技术工作交给工具处理
+
+:::

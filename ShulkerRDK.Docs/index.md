@@ -17,11 +17,11 @@ hero:
     src: /images/srdk.svg
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: 模块化架构
+    details: 基于扩展系统的架构设计, 可以根据需要选择和定制扩展模块
+  - title: 自动化流程
+    details: 简化 Minecraft 相关资源的开发、打包、测试和部署流程, 在 Git 存储库提供完善的 CI/CD 支持
+  - title: 客制化工作流
+    details: 使用 Levitate Tasks 这一指令式 DSL, 通过定义一系列命令来指导 ShulkerRDK 自动地完成较为复杂的任务
 ---
 
