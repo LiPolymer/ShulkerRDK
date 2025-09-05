@@ -46,8 +46,10 @@ static class Program {
             string assemblyPath = Path.Combine(Path.GetFullPath("./shulker/local/libs"), new AssemblyName(resolveEventArgs.Name).Name + ".dll");
             return File.Exists(assemblyPath) ? Assembly.LoadFile(assemblyPath) : null;
         };
-        
-        LoadExtensions(Context);
+
+        string? epp = null;
+        if (args is ["-epp",_]) epp = args[1];
+        LoadExtensions(Context,epp);
         Terminal.WriteLine("&l&bExtension",$"&7完成!&8[&7{Context.Extensions.Count - 1}&8]&7个外置扩展已载入!");
         
         InjectAliasFromVarTable(Context.CommandAliases,"alias.command.",Context.ProjectConfig.DefaultEnvVars);
@@ -57,7 +59,7 @@ static class Program {
         
         ActiveExtensions();
         
-        if (args.Length > 0) {
+        if (args.Length > 0 && args[0] != "-epp") {
             Terminal.WriteLine("&l&3Core","&eShulkerRDK载入完成!");
             if (DonateRecommendation()) {
                 Terminal.WriteLine("&8&o三秒后执行您的指令");
@@ -229,13 +231,17 @@ static class Program {
         }
         throw new Exception("未能作为扩展加载程序集");
     }
-    static void LoadExtensions(ShulkerContext context, string extensionsPath = "./shulker/extensions") {
+    static void LoadExtensions(ShulkerContext context,string? epp = null, string extensionsPath = "./shulker/extensions") {
         if (!Directory.Exists(extensionsPath)) {
             Directory.CreateDirectory(extensionsPath);
         }
         string[] files = Directory.GetFiles(extensionsPath);
         
         List<string> fileList = files.ToList();
+
+        if (epp != null) {
+            fileList.Add(epp);
+        }
         
         #if DEBUG
         fileList.Add(@"..\..\..\..\TestExtension\bin\Debug\net8.0\TestExtension.dll");
@@ -243,6 +249,7 @@ static class Program {
         fileList.Add(@"..\..\..\..\ShulkerRDK.Modrinth\bin\Debug\net8.0\ShulkerRDK.Modrinth.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.RRT\bin\Debug\net8.0\ShulkerRDK.RRT.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.Aseprite\bin\Debug\net8.0\ShulkerRDK.Aseprite.dll");
+        fileList.Add(@"..\..\..\..\ShulkerRDK.FFmpeg\bin\Debug\net8.0\ShulkerRDK.FFmpeg.dll");
         #endif
         
         files = fileList.ToArray();

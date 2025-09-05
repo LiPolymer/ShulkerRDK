@@ -4,6 +4,27 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>ShulkerRDK.Shared</Title>
+        <Authors>LiPolymer</Authors>
+        <Product>ShulkerRDK</Product>
+        <Description>ShulkerRDK 的共享代码库</Description>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+        <PackageProjectUrl>https://docs.lipoly.ink/ShulkerRDK/</PackageProjectUrl>
+        <PackageIcon>ShulkerRDK_Primary.png</PackageIcon>
+        <RepositoryUrl>https://github.com/LiPolymer/ShulkerRDK</RepositoryUrl>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="..\..\..\Downloads\ShulkerRDK_Primary.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+      <None Include="..\LICENSE">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+    </ItemGroup>
 
 </Project>

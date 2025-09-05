@@ -48,6 +48,10 @@ public class NetworkFile {
                     }
                     FileDownloader.DownloadFile(file.Link,Path.Combine(LocalPath,file.Sha1));
                 }
+                string? targetDir = Path.GetDirectoryName(destPath);
+                if (targetDir != null && !Directory.Exists(targetDir)) {
+                    Directory.CreateDirectory(targetDir);
+                }
                 File.Copy(Path.Combine(LocalPath,file.Sha1),destPath);
             } else {
                 ct?.WriteLine($"&7正在下载 &8[&7{file.Link}&8]");
