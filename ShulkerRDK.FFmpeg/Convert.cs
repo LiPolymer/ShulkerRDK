@@ -22,8 +22,8 @@ public static partial class Convert {
             string[] audioFiles = Directory.GetFiles(inputPath,"*.*",SearchOption.AllDirectories)
                 .Where(path => audioFileRegex.IsMatch(path))
                 .ToArray();
+            List<(string From,string To)> tasksStack = [];
             foreach (string file in audioFiles) {
-                ec.Logger.WriteLine($"&7正在转换&8[&7{Path.GetFileName(file)}&8]",Terminal.MessageType.Debug);
                 string relativePath = Path.GetRelativePath(inputPath,file);
                 string pngRelativePath = Path.ChangeExtension(relativePath,".ogg");
                 string destPath = Path.Combine(outputPath,pngRelativePath);
@@ -31,9 +31,14 @@ public static partial class Convert {
                 if (!Directory.Exists(destDirectory)) {
                     Directory.CreateDirectory(destDirectory!);
                 }
-                FFMpegArguments.FromFileInput(file).OutputToFile(destPath).ProcessSynchronously();
-                if (destroySource) File.Delete(file);
+                tasksStack.Add((file,destPath));
             }
+            Parallel.ForEach(tasksStack,task => {
+                ec.Logger.WriteLine($"&7正在转换&8[&7{Path.GetFileName(task.From)}&8]",Terminal.MessageType.Debug);
+                FFMpegArguments.FromFileInput(task.From).OutputToFile(task.To).ProcessSynchronously();
+                if (destroySource) File.Delete(task.From);
+                ec.Logger.WriteLine($"&7转换完成&8[&7{Path.GetFileName(task.To)}&8]",Terminal.MessageType.Debug);
+            });
         } else if (File.Exists(inputPath)) {
             outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!,Path.GetFileNameWithoutExtension(inputPath) + ".ogg");
             if (args.Length > 2) {
