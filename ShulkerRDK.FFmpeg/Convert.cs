@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using FFMpegCore;
+using FFMpegCore.Enums;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.FFmpeg;
@@ -15,7 +16,7 @@ public static partial class Convert {
             outputPath = inputPath;
             if (args.Length > 2) {
                 outputPath = args[2];
-                destroySource = false;
+                destroySource = args[1] == args[2];
             }
             ec.Logger.WriteLine($"&7正在转换&8[&7{inputPath}&8]>[&7{outputPath}&8]");
             Regex audioFileRegex = FileTypeRegex();
@@ -35,7 +36,12 @@ public static partial class Convert {
             }
             Parallel.ForEach(tasksStack,task => {
                 ec.Logger.WriteLine($"&7正在转换&8[&7{Path.GetFileName(task.From)}&8]",Terminal.MessageType.Debug);
-                FFMpegArguments.FromFileInput(task.From).OutputToFile(task.To).ProcessSynchronously();
+                Action<FFMpegArgumentOptions>? fao = (args.Length > 3 && args[3] == "mono")
+                    ? o => {
+                        o.WithCustomArgument("-ac 1");
+                    }
+                    : null;
+                FFMpegArguments.FromFileInput(task.From).OutputToFile(task.To,true,fao).ProcessSynchronously();
                 if (destroySource) File.Delete(task.From);
                 ec.Logger.WriteLine($"&7转换完成&8[&7{Path.GetFileName(task.To)}&8]",Terminal.MessageType.Debug);
             });
