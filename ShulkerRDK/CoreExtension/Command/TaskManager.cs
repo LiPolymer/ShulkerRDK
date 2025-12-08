@@ -13,7 +13,7 @@ public static class TaskManager {
                 Terminal.WriteLine("&e&lTask","Helper");
             });
             _subCommands.Add("list",_ => {
-                Terminal.WriteLine("&e&lTask","&e所有可使用的&9&o悬浮方法集");
+                Terminal.WriteLine("&e&lTask","&e所有可使用的&9&oLevitateTask");
                 string[] files = Directory.GetFiles("./shulker/tasks/", "*.lvt");
                 foreach (string lvtFile in files) {
                     Terminal.WriteLine("",$" &8- &6{Path.GetFileName(lvtFile).Replace(".lvt","")} &8[&7{File.ReadAllLines(lvtFile).Length}&8lines]");
