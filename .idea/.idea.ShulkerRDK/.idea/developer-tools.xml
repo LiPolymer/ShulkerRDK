@@ -4,8 +4,8 @@
     <developerToolsConfigurations>
       <developerToolConfiguration developerToolId="ascii-art" id="1593d3ed-2636-4716-96ab-ad0bb97c2757" name="Workbench">
         <properties>
-          <property key="textInput" type="INPUT" value="kotlin.String|ShulkerRRT" />
-          <property key="selectedFontFileName" type="CONFIGURATION" value="kotlin.String|threepoint.flf" />
+          <property key="textInput" type="INPUT" value="kotlin.String|FFmpeg" />
+          <property key="selectedFontFileName" type="CONFIGURATION" value="kotlin.String|slant.flf" />
         </properties>
       </developerToolConfiguration>
     </developerToolsConfigurations>

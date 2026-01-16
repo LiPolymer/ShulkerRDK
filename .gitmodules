@@ -1,0 +1,3 @@
+[submodule "submodules/Trident.Net"]
+	path = submodules/Trident.Net
+	url = https://github.com/TridentCore/Trident.Net

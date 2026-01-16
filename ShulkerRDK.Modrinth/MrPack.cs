@@ -27,7 +27,10 @@ public class MrPack {
         [JsonPropertyName("hashes")]
         public required HashesTable Hashes;
         [JsonPropertyName("env")]
-        public required EnvTable Envs;
+        public EnvTable Envs = new EnvTable {
+            Client = "required",
+            Server = "required"
+        };
         [JsonPropertyName("downloads")]
         public required List<string> Downloads;
         [JsonPropertyName("fileSize")]

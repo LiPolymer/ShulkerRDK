@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ShulkerRDK.Shared\ShulkerRDK.Shared.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
+      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Abstractions\Trident.Abstractions.csproj" />
+      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Core\Trident.Core.csproj" />
+      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Purl\Trident.Purl.csproj" />
+    </ItemGroup>
+
+</Project>
