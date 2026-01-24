@@ -250,7 +250,7 @@ static class Program {
         fileList.Add(@"..\..\..\..\ShulkerRDK.RRT\bin\Debug\net8.0\ShulkerRDK.RRT.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.Aseprite\bin\Debug\net8.0\ShulkerRDK.Aseprite.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.FFmpeg\bin\Debug\net8.0\ShulkerRDK.FFmpeg.dll");
-        fileList.Add(@"..\..\..\..\ShulkerRDK.Trident\bin\Debug\net10.0\ShulkerRDK.Trident.dll");
+        fileList.Add(@"..\..\..\..\ShulkerRDK.Prismarine\bin\Debug\net10.0\ShulkerRDK.Prismarine.dll");
         #endif
         
         files = fileList.ToArray();

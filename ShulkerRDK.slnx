@@ -5,15 +5,15 @@
     <Project Path="ShulkerRDK.Aseprite/ShulkerRDK.Aseprite.csproj" />
     <Project Path="ShulkerRDK.FFmpeg/ShulkerRDK.FFmpeg.csproj" />
     <Project Path="ShulkerRDK.Modrinth/ShulkerRDK.Modrinth.csproj" />
+    <Project Path="ShulkerRDK.Prismarine/ShulkerRDK.Prismarine.csproj" />
     <Project Path="ShulkerRDK.ResourceMagick/ShulkerRDK.ResourceMagick.csproj" />
     <Project Path="ShulkerRDK.RRT/ShulkerRDK.RRT.csproj" />
-    <Project Path="ShulkerRDK.Trident/ShulkerRDK.Trident.csproj" />
     <Project Path="TestExtension/TestExtension.csproj" />
   </Folder>
   <Folder Name="/Trident.Net/">
-    <Project Path="submodules\Trident.Net\src\Trident.Abstractions\Trident.Abstractions.csproj"/>
-    <Project Path="submodules\Trident.Net\src\Trident.Cli\Trident.Cli.csproj"/>
-    <Project Path="submodules\Trident.Net\src\Trident.Core\Trident.Core.csproj"/>
-    <Project Path="submodules\Trident.Net\src\Trident.Purl\Trident.Purl.csproj"/>
+    <Project Path="submodules\Trident.Net\src\Trident.Abstractions\Trident.Abstractions.csproj" />
+    <Project Path="submodules\Trident.Net\src\Trident.Cli\Trident.Cli.csproj" />
+    <Project Path="submodules\Trident.Net\src\Trident.Core\Trident.Core.csproj" />
+    <Project Path="submodules\Trident.Net\src\Trident.Purl\Trident.Purl.csproj" />
   </Folder>
 </Solution>
