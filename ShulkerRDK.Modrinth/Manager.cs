@@ -251,24 +251,20 @@ public class Manager {
     static void PrepareOverrides(string input, string output, IChainedLikeTerminal logger) {
         logger.WriteLine($"&7正在处理本地文件&8[&7{input}&8]&7>>&8[&7{output}&8]");
 
-        // 目录映射：(src目录名, mrpack目录名, 是否过滤.mrf)
-        (string src, string dest, bool filterMrf)[] dirs = [
+        var dirs = new (string src, string dest, bool filterMrf)[] {
             ("config", "overrides/config", false),
             ("mods", "overrides/mods", true),
             ("resourcepacks", "client-overrides/resourcepacks", false),
             ("shaderpacks", "client-overrides/shaderpacks", false)
-        ];
+        };
 
         foreach (var (src, dest, filterMrf) in dirs) {
-            string srcDir = Path.Combine(input, src);
+            var srcDir = Path.Combine(input, src);
             if (!Directory.Exists(srcDir)) continue;
-            string destDir = Path.Combine(output, dest);
-            Directory.CreateDirectory(destDir);
 
-            foreach (string file in Directory.GetFiles(srcDir, "*", SearchOption.AllDirectories)) {
+            foreach (var file in Directory.GetFiles(srcDir, "*", SearchOption.AllDirectories)) {
                 if (filterMrf && Path.GetExtension(file) == ".mrf") continue;
-                string relPath = Path.GetRelativePath(srcDir, file);
-                string destPath = Path.Combine(destDir, relPath);
+                var destPath = Path.Combine(output, dest, Path.GetRelativePath(srcDir, file));
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
                 File.Copy(file, destPath, true);
             }
