@@ -16,15 +16,16 @@ public class Manager {
     public static string? Method(string[] args,LevitateExecutionContext ec) {
         LevitateLogger ct = ec.Logger;
         ct.AddNode("&aModrinth");
-        bool destroySource = true;
         if (!Tools.TryGetSub(["r","s","e","o"],args,1,ct)) return null;
         if (!Tools.CheckParamLength(args,2,ct)) return null;
-        string to = args[2];
+
         if (args[1] == "o") {
-            if (!Tools.CheckParamLength(args,3,ct)) return null;
-            PrepareOverrides(args[2], args[3], ct);
+            PrepareOverrides(args[2], Tools.CheckParamLength(args,3) ? args[3] : "./shulker/cache", ct);
             return null;
         }
+
+        bool destroySource = true;
+        string to = args[2];
         if (Tools.CheckParamLength(args,3)) {
             to = args[3];
             destroySource = false;
@@ -32,11 +33,7 @@ public class Manager {
             destroySource = false;
             if (!Tools.CheckParamLength(args,3,ct)) return null;
         }
-        if (Tools.CheckParamLength(args,4)) {
-            if (args[4] == "true") {
-                destroySource = true;
-            }
-        }
+        if (Tools.CheckParamLength(args,4) && args[4] == "true") destroySource = true;
         TransitionLayer(args[1],args[2],to,destroySource,ct);
         return null;
     }
@@ -45,16 +42,15 @@ public class Manager {
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         ChainedTerminal ct = new ChainedTerminal("&aModrinth");
         if (!Tools.TryGetSub(["restore","serialize","clean","r","s","overrides","o"],args,1,ct)) return;
+
+        string input = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
         if (args[1] == "o" || args[1] == "overrides") {
-            string input = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
-            string output = Tools.CheckParamLength(args,3) ? args[3] : "./shulker/cache";
-            PrepareOverrides(input, output, ct);
+            PrepareOverrides(input, Tools.CheckParamLength(args,3) ? args[3] : "./shulker/cache", ct);
             return;
         }
-        string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
-        bool isOutMissing = !Tools.CheckParamLength(args,2);
-        string to = !isOutMissing ? args[3] : from;
-        TransitionLayer(args[1],from,to,isOutMissing,ct);
+
+        string to = Tools.CheckParamLength(args,3) ? args[3] : input;
+        TransitionLayer(args[1],input,to,!Tools.CheckParamLength(args,3),ct);
     }
 
     static void TransitionLayer(string act,string from,string to,bool destroySource,IChainedLikeTerminal ct) {
