@@ -8,9 +8,11 @@ public class Extension : ExtensionBase {
         #if !DEBUG
         //NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
         #endif
-        
+
         Commands.Add("mrp",Manager.Command);
+        Commands.Add("mrp-overrides",Manager.OverridesCommand);
         LevitateMethods.Add("mrp",Manager.Method);
+        LevitateMethods.Add("mrp-overrides",Manager.OverridesMethod);
     }
     public override string Id { get => "shulker.modrinth"; }
     public override string Name { get => "ModrinthPSK"; }

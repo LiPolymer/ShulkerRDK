@@ -61,7 +61,9 @@ proj chname "My Project"
 
 1. 将您的整合包的模组文件放在 `./src/mods` 中
 2. 将您的整合包的配置文件放在 `./src/config` 中
-3. (可选) 打开 ShulkerRDK, 执行 `mrp s`, 以序列化托管于 Modrinth 的文件
+3. 将您的整合包的内置资源包放在 `./src/resourcepacks` 中
+4. 将您的整合包的内置光影包放在 `./src/shaderpacks` 中
+5. (可选) 打开 ShulkerRDK, 执行 `mrp s`, 以序列化托管于 Modrinth 的文件
 
 #### 第一次构建
 现在您可以使用以下命令来使用 ShulkerRDK 创建您项目
