@@ -17,9 +17,14 @@ public class Manager {
         LevitateLogger ct = ec.Logger;
         ct.AddNode("&aModrinth");
         bool destroySource = true;
-        if (!Tools.TryGetSub(["r","s","e"],args,1,ct)) return null;
+        if (!Tools.TryGetSub(["r","s","e","o"],args,1,ct)) return null;
         if (!Tools.CheckParamLength(args,2,ct)) return null;
         string to = args[2];
+        if (args[1] == "o") {
+            if (!Tools.CheckParamLength(args,3,ct)) return null;
+            PrepareOverrides(args[2], args[3], ct);
+            return null;
+        }
         if (Tools.CheckParamLength(args,3)) {
             to = args[3];
             destroySource = false;
@@ -39,7 +44,13 @@ public class Manager {
     [Description("Modrinth平台操作")]
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         ChainedTerminal ct = new ChainedTerminal("&aModrinth");
-        if (!Tools.TryGetSub(["restore","serialize","clean","r","s"],args,1,ct)) return;
+        if (!Tools.TryGetSub(["restore","serialize","clean","r","s","overrides","o"],args,1,ct)) return;
+        if (args[1] == "o" || args[1] == "overrides") {
+            string input = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
+            string output = Tools.CheckParamLength(args,3) ? args[3] : "./shulker/cache";
+            PrepareOverrides(input, output, ct);
+            return;
+        }
         string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
         bool isOutMissing = !Tools.CheckParamLength(args,2);
         string to = !isOutMissing ? args[3] : from;
@@ -240,93 +251,32 @@ public class Manager {
         };
     }
 
-    // Levitate方法入口：处理本地文件到overrides目录
-    public static string? OverridesMethod(string[] args, LevitateExecutionContext ec) {
-        LevitateLogger logger = ec.Logger;
-        logger.AddNode("&aOverrides");
-        if (!Tools.CheckParamLength(args, 1, logger)) return null;
-        if (!Tools.CheckParamLength(args, 2, logger)) return null;
-        string input = args[1];
-        string output = args[2];
-        PrepareOverrides(input, output, logger);
-        return null;
-    }
-
-    // 命令入口：处理本地文件到overrides目录
-    [Description("处理本地文件到overrides目录")]
-    public static void OverridesCommand(string[] args, ShulkerContext shulkerContext) {
-        ChainedTerminal logger = new ChainedTerminal("&aOverrides");
-        string input = Tools.CheckParamLength(args, 1) ? args[1] : shulkerContext.ProjectConfig!.RootPath;
-        string output = Tools.CheckParamLength(args, 2) ? args[2] : "./shulker/cache";
-        PrepareOverrides(input, output, logger);
-    }
-
     // 处理本地文件到overrides目录
     static void PrepareOverrides(string input, string output, IChainedLikeTerminal logger) {
         logger.WriteLine($"&7正在处理本地文件&8[&7{input}&8]&7>>&8[&7{output}&8]");
 
-        // overrides目录（客户端和服务端通用）
-        Dictionary<string, string> overridesDirs = new Dictionary<string, string> {
-            { "config", "overrides/config" }
-        };
+        // 目录映射：(src目录名, mrpack目录名, 是否过滤.mrf)
+        (string src, string dest, bool filterMrf)[] dirs = [
+            ("config", "overrides/config", false),
+            ("mods", "overrides/mods", true),
+            ("resourcepacks", "client-overrides/resourcepacks", false),
+            ("shaderpacks", "client-overrides/shaderpacks", false)
+        ];
 
-        // client-overrides目录（仅客户端）
-        Dictionary<string, string> clientOverridesDirs = new Dictionary<string, string> {
-            { "resourcepacks", "client-overrides/resourcepacks" },
-            { "shaderpacks", "client-overrides/shaderpacks" }
-        };
-
-        // 处理overrides目录
-        foreach (KeyValuePair<string, string> dir in overridesDirs) {
-            string srcDir = Path.Combine(input, dir.Key);
-            if (Directory.Exists(srcDir)) {
-                string destDir = Path.Combine(output, dir.Value);
-                CopyDirectory(srcDir, destDir, logger, null);
-            }
-        }
-
-        // 处理client-overrides目录
-        foreach (KeyValuePair<string, string> dir in clientOverridesDirs) {
-            string srcDir = Path.Combine(input, dir.Key);
-            if (Directory.Exists(srcDir)) {
-                string destDir = Path.Combine(output, dir.Value);
-                CopyDirectory(srcDir, destDir, logger, null);
-            }
-        }
-
-        // 处理mods目录中的本地文件（非.mrf文件）
-        string modsDir = Path.Combine(input, "mods");
-        if (Directory.Exists(modsDir)) {
-            string destModsDir = Path.Combine(output, "overrides/mods");
-            CopyDirectory(modsDir, destModsDir, logger, ".mrf"); // 过滤.mrf文件
-        }
-
-        logger.WriteLine("&a完成!");
-    }
-
-    // 复制目录，可选过滤特定扩展名
-    static void CopyDirectory(string srcDir, string destDir, IChainedLikeTerminal logger, string? filterExtension) {
-        if (!Directory.Exists(destDir)) {
+        foreach (var (src, dest, filterMrf) in dirs) {
+            string srcDir = Path.Combine(input, src);
+            if (!Directory.Exists(srcDir)) continue;
+            string destDir = Path.Combine(output, dest);
             Directory.CreateDirectory(destDir);
-        }
 
-        string[] files = Directory.GetFiles(srcDir, "*", SearchOption.AllDirectories);
-        foreach (string file in files) {
-            // 过滤指定扩展名的文件
-            if (filterExtension != null && Path.GetExtension(file) == filterExtension) {
-                logger.WriteLine($"&7跳过托管文件&8[&7{Path.GetFileName(file)}&8]", Terminal.MessageType.Debug);
-                continue;
+            foreach (string file in Directory.GetFiles(srcDir, "*", SearchOption.AllDirectories)) {
+                if (filterMrf && Path.GetExtension(file) == ".mrf") continue;
+                string relPath = Path.GetRelativePath(srcDir, file);
+                string destPath = Path.Combine(destDir, relPath);
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                File.Copy(file, destPath, true);
             }
-
-            string relativePath = Path.GetRelativePath(srcDir, file);
-            string destPath = Path.Combine(destDir, relativePath);
-            string? destDirectory = Path.GetDirectoryName(destPath);
-            if (!Directory.Exists(destDirectory)) {
-                Directory.CreateDirectory(destDirectory!);
-            }
-
-            logger.WriteLine($"&7复制&8[&7{relativePath}&8]", Terminal.MessageType.Debug);
-            File.Copy(file, destPath, true);
         }
+        logger.WriteLine("&a完成!");
     }
 }

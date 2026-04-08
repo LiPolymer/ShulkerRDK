@@ -378,5 +378,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-Agent Related
+# Agent Related
 ClAUDE.md
