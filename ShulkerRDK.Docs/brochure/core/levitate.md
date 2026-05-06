@@ -4,7 +4,7 @@ Levitate 方法是 ShulkerRDK 实现自动化和客制化的主要工具
 
 它们以 DSL (指令式领域特定语言) 的形式写在 `.lvt` 脚本文件中, 通过定义一系列命令来指导 ShulkerRDK 自动完成较为复杂的任务
 
-***
+
 
 ## 开始编写您的脚本
 
@@ -26,7 +26,7 @@ Levitate 方法是 ShulkerRDK 实现自动化和客制化的主要工具
 >
 > 这和 ShulkerRDK 如何解析参数有关 — 通常参数以空格分割, 但双引号内包裹的内容会作为一个整体来解析
 
-***
+
 
 ## 变量/表达式?
 
@@ -54,7 +54,7 @@ echo "项目名: %project.name%"
 echo "缓存路径: {path dir %project.cache%/test.txt}"
 ```
 
-***
+
 
 ## 自动环境变量
 
@@ -70,7 +70,7 @@ echo "缓存路径: {path dir %project.cache%/test.txt}"
 
 此外, 您在项目配置中定义的自定义环境变量也会被注入
 
-***
+
 
 ## 局部变量 — var
 
@@ -88,7 +88,7 @@ echo ^greeting^ World!
 # 输出: Hello World!
 ```
 
-***
+
 
 ## 环境变量 — env
 
@@ -116,7 +116,7 @@ echo "构建模式: ^mode^"
 >
 > 脚本中设置的环境变量仅在当前解释器实例中有效, 脚本结束后不会保留
 
-***
+
 
 ## 别名
 
@@ -139,7 +139,7 @@ makeCleanup
 # 等价于: delete "%project.cache%"
 ```
 
-***
+
 
 ## echo
 
@@ -157,7 +157,7 @@ echo "当前版本: %project.ver%"
 echo "构建路径: {path dir \"%project.output%\"}"
 ```
 
-***
+
 
 ## input
 
@@ -174,7 +174,7 @@ var user_input {input "请输入您的名字: "}
 echo "你好, ^user_input^!"
 ```
 
-***
+
 
 ## run
 
@@ -194,7 +194,7 @@ run ./shulker/tasks/build.lvt
 run ./shulker/tasks/cleanup.lvt new
 ```
 
-***
+
 
 ## import
 
@@ -215,7 +215,7 @@ import shulker.modrinth
 
 导入后, 该扩展提供的所有 Levitate 方法和别名都可以在当前脚本中使用
 
-***
+
 
 ## copy
 
@@ -247,7 +247,7 @@ copy "./src/icon.png" "./build/icon.png"
 > [!NOTE]
 > `copy` 会自动创建不存在的目标目录
 
-***
+
 
 ## delete
 
@@ -271,7 +271,7 @@ delete "%project.cache%"
 delete "%project.cache%" "\.tmp$"
 ```
 
-***
+
 
 ## flat
 
@@ -299,7 +299,7 @@ flat "./src/" "./build/" true "\.meta$"
 
 `copy` 与 `flat` 的区别: `copy` 保留目录结构, `flat` 将所有文件放在同一目录下
 
-***
+
 
 ## sh
 
@@ -323,7 +323,7 @@ Shell 命令的输出会实时打印到终端, 执行完成后会显示耗时
 > [!WARNING]
 > `sh` 命令直接调用系统进程, 注意不同操作系统的命令差异
 
-***
+
 
 ## verm
 
@@ -352,7 +352,7 @@ echo "主版本号: ^major_ver^"
 > [!NOTE]
 > 执行 `verm` 修改版本号后, 会自动更新环境变量 `project.ver`
 
-***
+
 
 ## netfile
 
@@ -373,7 +373,7 @@ netfile restore
 netfile restore "./downloads/" "./src/"
 ```
 
-***
+
 
 ## check
 
@@ -396,7 +396,7 @@ check {path isdir "%project.cache%"} delete "%project.cache%"
 > [!NOTE]
 > `check` 仅在第一个参数严格等于 `"true"` 时才执行后续方法
 
-***
+
 
 ## path
 
@@ -423,7 +423,7 @@ var is_dir {path isdir "./src/assets"}
 check ^is_dir^ echo "assets 是一个目录"
 ```
 
-***
+
 
 ## list
 
@@ -450,7 +450,7 @@ var my_list {list set ^my_list^ 1 "blueberry"}
 var my_list {list add ^my_list^ "date"}
 ```
 
-***
+
 
 ## regex
 
@@ -473,7 +473,7 @@ echo "^result^"
 # 输出: hello-world
 ```
 
-***
+
 
 ## not
 
@@ -490,7 +490,7 @@ var is_not_dir {not ^is_dir^}
 check ^is_not_dir^ echo "src 不是目录"
 ```
 
-***
+
 
 ## ifr
 
@@ -514,7 +514,7 @@ ifr "{{VERSION}}" "%project.ver%" "./src/README.txt"
 >
 > 如需正则替换请使用 `regex replace`
 
-***
+
 
 ## pkgr
 
