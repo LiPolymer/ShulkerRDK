@@ -76,7 +76,7 @@ echo "缓存路径: {path dir %project.cache%/test.txt}"
 
 用于在脚本执行期间存储临时数据:
 
-```
+```lvt
 var <变量名> <变量值>
 ```
 
@@ -94,7 +94,7 @@ echo ^greeting^ World!
 
 在脚本中获取或设置环境变量, 可用于方法间的值传递:
 
-```
+```lvt
 env get <变量名>          # 获取环境变量值 (作为方法返回值)
 env set <变量名> <值>      # 设置环境变量
 ```
@@ -145,7 +145,7 @@ makeCleanup
 
 输出文本到终端:
 
-```
+```lvt
 echo [内容]
 ```
 
@@ -163,7 +163,7 @@ echo "构建路径: {path dir \"%project.output%\"}"
 
 显示提示文本并等待用户输入, 返回用户输入的内容:
 
-```
+```lvt
 input [提示文本]
 ```
 
@@ -180,7 +180,7 @@ echo "你好, ^user_input^!"
 
 从脚本中执行另一个 Levitate Task 脚本:
 
-```
+```lvt
 run <脚本路径>        # 执行已有脚本
 run <脚本路径> new    # 使用新的解释器实例执行
 ```
@@ -200,7 +200,7 @@ run ./shulker/tasks/cleanup.lvt new
 
 导入扩展的 Levitate 方法和别名到当前解释器:
 
-```
+```lvt
 import <扩展ID>
 ```
 
@@ -221,7 +221,7 @@ import shulker.modrinth
 
 复制文件或目录:
 
-```
+```lvt
 copy <源路径> [目标路径] [是否覆盖] [忽略正则]
 ```
 
@@ -253,7 +253,7 @@ copy "./src/icon.png" "./build/icon.png"
 
 删除文件或目录:
 
-```
+```lvt
 delete <目标路径> [正则过滤]
 ```
 
@@ -305,7 +305,7 @@ flat "./src/" "./build/" true "\.meta$"
 
 执行外部 Shell 命令:
 
-```
+```lvt
 sh <可执行程序> [参数...]
 ```
 
@@ -329,7 +329,7 @@ Shell 命令的输出会实时打印到终端, 执行完成后会显示耗时
 
 版本管理 (Levitate 版本):
 
-```
+```lvt
 verm smajor            # 主版本号 +1
 verm sminor            # 次版本号 +1
 verm sfix              # 修订号 +1
@@ -358,7 +358,7 @@ echo "主版本号: ^major_ver^"
 
 还原网络链接文件:
 
-```
+```lvt
 netfile restore [源目录] [输出目录]
 # 或简写:
 netfile r [源目录] [输出目录]
@@ -379,7 +379,7 @@ netfile restore "./downloads/" "./src/"
 
 条件检查 — 如果第一个参数为 `true`, 则执行后续方法:
 
-```
+```lvt
 check <条件> <方法名> [方法参数...]
 ```
 
@@ -402,7 +402,7 @@ check {path isdir "%project.cache%"} delete "%project.cache%"
 
 路径工具:
 
-```
+```lvt
 path remapper <基准路径> <目标路径> <目标根> [新扩展名]    # 路径重映射
 path dir <文件路径>                                      # 获取文件所在目录
 path isdir <路径>                                        # 判断是否为目录
@@ -429,7 +429,7 @@ check ^is_dir^ echo "assets 是一个目录"
 
 列表操作 — 使用 `|` 分隔的字符串模拟列表:
 
-```
+```lvt
 list get <列表字符串> <索引>           # 获取元素
 list set <列表字符串> <索引> <新值>    # 设置元素
 list add <列表字符串> <新元素>         # 添加元素
@@ -456,7 +456,7 @@ var my_list {list add ^my_list^ "date"}
 
 正则表达式操作:
 
-```
+```lvt
 regex <正则表达式> match <测试字符串>              # 匹配检查
 regex <正则表达式> replace <测试字符串> <替换内容>  # 替换
 ```
@@ -479,7 +479,7 @@ echo "^result^"
 
 布尔取反:
 
-```
+```lvt
 not <true/false>
 ```
 
@@ -496,7 +496,7 @@ check ^is_not_dir^ echo "src 不是目录"
 
 文件内文本替换 (In-File Replacer):
 
-```
+```lvt
 ifr <查找文本> <替换文本> <文件路径>
 ```
 
@@ -520,7 +520,7 @@ ifr "{{VERSION}}" "%project.ver%" "./src/README.txt"
 
 打包/解包工具, 支持 zip 和 tar 格式:
 
-```
+```lvt
 pkgr zip make   <源目录> <输出路径>     # 创建 zip 压缩包
 pkgr zip tear   <压缩文件> <输出目录>    # 解压 zip 文件
 pkgr tar make   <源目录> <输出路径>     # 创建 tar 归档

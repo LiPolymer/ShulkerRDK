@@ -27,7 +27,7 @@
 
 ## 命令一览
 
-```
+```lvt
 mrp serialize [源目录] [输出目录]     (或 mrp s)    # 序列化文件为 .mrf 引用
 mrp restore  [源目录] [输出目录]      (或 mrp r)    # 还原 .mrf 为真实文件
 mrp export   [源目录] [输出目录]      (或 mrp e)    # 构建 .mrpack 索引
@@ -45,7 +45,7 @@ mrp clean                                       # 清理本地缓存
 
 将本地文件转换为 `.mrf` 引用文件:
 
-```
+```lvt
 mrp serialize [源目录] [输出目录]     (或 mrp s)
 ```
 
@@ -69,7 +69,7 @@ mrp serialize [源目录] [输出目录]     (或 mrp s)
 
 将 `.mrf` 引用文件还原为真实的 Modrinth 资源文件:
 
-```
+```lvt
 mrp restore [源目录] [输出目录]       (或 mrp r)
 ```
 
@@ -81,7 +81,7 @@ mrp restore [源目录] [输出目录]       (或 mrp r)
 
 构建 `.mrpack` 整合包元数据索引:
 
-```
+```lvt
 mrp export [源目录] [输出目录]        (或 mrp e)
 ```
 
@@ -93,7 +93,7 @@ mrp export [源目录] [输出目录]        (或 mrp e)
 
 通过 Modrinth URL、项目 ID 或 slug 添加新资源:
 
-```
+```lvt
 mrp add <URL或ID> [版本号] [输出目录]     (或 mrp a)
 ```
 
@@ -146,7 +146,7 @@ Sodium (Mod)
 
 从文件批量添加资源:
 
-```
+```lvt
 mrp add -f <文件路径> [输出目录]       (或 mrp a -f)
 ```
 
@@ -167,7 +167,7 @@ sodium 0.6.13
 
 将现有 `.mrf` 资源更新到最新 Release 版本:
 
-```
+```lvt
 mrp update [目录]                    (或 mrp u)
 ```
 
@@ -198,7 +198,7 @@ Modrinth 更新资源
 
 锁定资源使其不被 `mrp update` 更新:
 
-```
+```lvt
 mrp lock <文件名或项目ID>             # 锁定
 mrp unlock <文件名或项目ID>           # 解锁
 ```
@@ -228,7 +228,7 @@ mrp unlock <文件名或项目ID>           # 解锁
 
 删除本地 MRF 缓存目录:
 
-```
+```lvt
 mrp clean
 ```
 
@@ -240,7 +240,7 @@ mrp clean
 
 `mrp` 同样可以在 Levitate 脚本中作为方法调用:
 
-```levitate
+```lvt
 mrp s src/mods          # 序列化
 mrp r src/mods          # 还原
 mrp e src/mods build    # 导出

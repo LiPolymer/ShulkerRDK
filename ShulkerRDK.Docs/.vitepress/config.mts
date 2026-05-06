@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { lvt } from './shiki/lvt'
 
 // https://vitepress.dev/reference/site-config
+// @ts-ignore - vitepress-plugin-mermaid type incompatibility
 export default withMermaid(
   defineConfig({
     title: "ShulkerRDK Docs",
@@ -11,11 +13,16 @@ export default withMermaid(
     head: [
       ['link', { rel: 'icon', type: 'image/svg+xml', href: '/ShulkerRDK/images/srdk.svg' }]
     ],
+    markdown: {
+      shikiSetup(lang) {
+        lang.loadLanguage(lvt)
+      }
+    },
     themeConfig: {
       // https://vitepress.dev/reference/default-theme-config
       nav: [
         { text: '主页', link: '/' },
-        { text: '文档', link: '/quickGuides/resourcepack' }
+        { text: '文档', link: '/quickGuides/' }
       ],
 
       sidebar: [
