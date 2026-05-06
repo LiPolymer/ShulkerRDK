@@ -25,9 +25,15 @@ export default withMermaid(
         },
         {
           text: '手册',
+          link: '/brochure',
           items: [
             { text: '总览', link: '/brochure/overview' },
-            {text: '交互与架构', link: '/brochure/interaction'}
+            { text: '交互与架构', link: '/brochure/interaction' },
+            { text: '核心扩展', items:[
+              { text: '指令', link: '/brochure/core/commands' },
+              { text: 'Levitate', link: '/brochure/core/levitate' }, 
+              { text: '启动行动', link: '/brochure/core/startupActions' }
+            ]}
           ]
         }
       ],

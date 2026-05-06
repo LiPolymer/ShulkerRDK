@@ -4,6 +4,8 @@
 
 *面向Minecraft的模块化低代码SDK/资源装配工具*
 
+<img src="https://lipoly.ink/assets/badges/humanity.svg" alt="This project was built by human" width="200">
+
 您可以通过使用[这个模板](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)来使用这个工具
 
 ## 概述

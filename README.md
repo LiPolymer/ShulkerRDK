@@ -4,7 +4,9 @@
 
 *Modular low code SDK / resource composer for Minecraft*
 
-You can use this tool by using [this template](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)
+<img src="https://lipoly.ink/assets/badges/humanity.svg" alt="This project was built by human" width="200">
+
+You can use this tool by using [resource pack template](https://github.com/LiPolymer/ShulkerRDK.RPTemplate) or [mod pack template](https://github.com/LiPolymer/ShulkerRDK.MPTemplate)
 
 ## Overview
 

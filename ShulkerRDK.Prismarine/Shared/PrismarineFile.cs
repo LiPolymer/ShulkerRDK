@@ -1,22 +1,32 @@
 ﻿using System.Text.Json;
-using ReverseMarkdown.Converters;
 using ShulkerRDK.Shared;
+using Trident.Abstractions.Repositories;
 using Trident.Abstractions.Repositories.Resources;
 using Trident.Abstractions.Utilities;
+
 namespace ShulkerRDK.Prismarine.Shared;
 
 public class PrismarineFileMeta {
-    public PrismarineFileMeta(Package triPack) {
+    public static Filter? GlobalLimiter;
+    public PrismarineFileMeta(Package triPack, Filter? limiter = null) {
         Purl = PackageHelper.ToPurl(triPack);
         if (triPack.Sha1 != null) Sha1 = triPack.Sha1;
+        Limiter = limiter;
     }
-    public PrismarineFileMeta(string purl) {
+    public PrismarineFileMeta(string purl, Filter? limiter = null) {
         if (!PackageHelper.TryParse(purl, out (string Label, string? Namespace, string Pid, string? Vid) pdi))
             throw new ArgumentException($"无法解析purl: [{purl}]");
         Purl = PackageHelper.ToPurl(pdi.Label,pdi.Namespace,pdi.Pid,pdi.Vid); //标准化
+        Limiter = limiter;
     }
     public string Purl;
     public string? Sha1;
+    public Filter? Limiter;
+
+    public void Update(Filter? filter = null) {
+        filter ??= GlobalLimiter ?? throw new Exception("全局限滤器未设定");
+        
+    }
 }
 
 public class PrismarineFileInstance {
@@ -34,7 +44,7 @@ public class PrismarineFileInstance {
     public static PrismarineFileInstance Create(string path, PrismarineFileMeta meta) {
         PrismarineFileInstance pfi = new PrismarineFileInstance {
             FilePath = path,
-            Meta = meta
+            Meta = meta,
         };
         pfi.Save();
         return pfi;
