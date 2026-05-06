@@ -96,6 +96,6 @@ task test
 
 - [指令系统](core/commands.md) — 交互模式下可用的全部指令, 包括项目管理、版本控制、环境变量和网络链接文件等
 - [Levitate 方法](core/levitate.md) — Levitate Task 脚本中可使用的 DSL 方法, 用于编写自动化工作流
-- [启动行动](core/starupActions.md) — 通过命令行参数直接触发的操作, 适合自动化调用
+- [启动行动](core/startupActions.md) — 通过命令行参数直接触发的操作, 适合自动化调用
 
 让我们从最常用的指令系统开始吧
