@@ -296,21 +296,17 @@ public class Manager {
     }
 
     static (string slugOrId, string? versionId) ParseModrinthInput(string input) {
-        if (input.StartsWith("http",StringComparison.OrdinalIgnoreCase)) {
-            Uri uri = new Uri(input);
-            string[] segments = uri.AbsolutePath.Trim('/').Split('/');
-            // https://modrinth.com/{type}/{slug} or https://modrinth.com/{type}/{slug}/version/{vid}
-            if (segments.Length >= 2) {
-                string slug = segments[1];
-                string? versionId = null;
-                if (segments.Length >= 4 && segments[2] == "version") {
-                    versionId = segments[3];
-                }
-                return (slug,versionId);
-            }
-            throw new FormatException($"无法解析Modrinth URL: {input}");
+        if (!input.StartsWith("http",StringComparison.OrdinalIgnoreCase)) return (input,null);
+        Uri uri = new Uri(input);
+        string[] segments = uri.AbsolutePath.Trim('/').Split('/');
+        // https://modrinth.com/{type}/{slug} or https://modrinth.com/{type}/{slug}/version/{vid}
+        if (segments.Length < 2) throw new FormatException($"无法解析Modrinth URL: {input}");
+        string slug = segments[1];
+        string? versionId = null;
+        if (segments.Length >= 4 && segments[2] == "version") {
+            versionId = segments[3];
         }
-        return (input,null);
+        return (slug,versionId);
     }
 
     static global::Modrinth.Models.File GetPrimaryFile(Version version) {
@@ -417,11 +413,10 @@ public class Manager {
         }
         string[] lines = File.ReadAllLines(filePath);
         List<string> entries = [];
-        foreach (string line in lines) {
-            string trimmed = line.Trim();
-            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith('#')) continue;
-            entries.Add(trimmed);
-        }
+        entries.AddRange(lines
+                             .Select(line => line.Trim())
+                             .Where(trimmed => !string.IsNullOrEmpty(trimmed) 
+                                               && !trimmed.StartsWith('#')));
         ct.WriteLine($"&7共 &8[{entries.Count}] &7个资源");
         int success = 0, failed = 0;
         foreach (string entry in entries) {
@@ -453,15 +448,16 @@ public class Manager {
         (List<string> loaders,List<string> gameVersions) = LoadMrpackDependencies();
 
         List<(string path,MrHostedFile mrf)> entries = [];
-        foreach (string file in mrfFiles) {
-            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
-            entries.Add((file,mrf));
-        }
+        entries.AddRange(from file in mrfFiles 
+                         let mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))! 
+                         select (file,mrf));
 
         Dictionary<string,Version> currentVersions = [];
-        string[] sha1s = entries.Select(e => e.mrf.Sha1).Distinct().ToArray();
         try {
-            Task<IDictionary<string,Version>> hashTask = _client.VersionFile.GetMultipleVersionsByHashAsync(sha1s);
+            Task<IDictionary<string,Version>> hashTask = _client.VersionFile
+                .GetMultipleVersionsByHashAsync(entries
+                                                    .Select(e => e.mrf.Sha1)
+                                                    .Distinct().ToArray());
             hashTask.Wait();
             foreach (KeyValuePair<string,Version> kv in hashTask.Result) currentVersions[kv.Key] = kv.Value;
         } catch {
@@ -478,12 +474,18 @@ public class Manager {
         }
 
         Dictionary<string,Version[]> projectLatestVersions = [];
-        HashSet<string> seenProjects = [];
-        foreach (var kv in currentVersions) {
-            string projectId = kv.Value.ProjectId;
-            if (!seenProjects.Add(projectId)) continue;
+        foreach (string projectId in currentVersions
+                     .Select(kv => kv.Value.ProjectId)
+                     .Distinct()) {
             try {
-                Task<Version[]> listTask = _client.Version.GetProjectVersionListAsync(projectId,loaders.Length > 0 ? loaders : null,gameVersions.Length > 0 ? gameVersions : null);
+                Task<Version[]> listTask = _client.Version
+                    .GetProjectVersionListAsync(projectId,
+                                                loaders.Count > 0 
+                                                    ? loaders.ToArray() 
+                                                    : null,
+                                                gameVersions.Count > 0 
+                                                    ? gameVersions.ToArray() 
+                                                    : null);
                 listTask.Wait();
                 projectLatestVersions[projectId] = listTask.Result;
             } catch (Exception e) {
