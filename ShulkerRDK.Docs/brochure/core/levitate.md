@@ -4,7 +4,7 @@ Levitate 方法是 ShulkerRDK 实现自动化和客制化的主要工具
 
 它们以 DSL (指令式领域特定语言) 的形式写在 `.lvt` 脚本文件中, 通过定义一系列命令来指导 ShulkerRDK 自动完成较为复杂的任务
 
-***
+
 
 ## 开始编写您的脚本
 
@@ -26,7 +26,7 @@ Levitate 方法是 ShulkerRDK 实现自动化和客制化的主要工具
 >
 > 这和 ShulkerRDK 如何解析参数有关 — 通常参数以空格分割, 但双引号内包裹的内容会作为一个整体来解析
 
-***
+
 
 ## 变量/表达式?
 
@@ -54,7 +54,7 @@ echo "项目名: %project.name%"
 echo "缓存路径: {path dir %project.cache%/test.txt}"
 ```
 
-***
+
 
 ## 自动环境变量
 
@@ -70,13 +70,13 @@ echo "缓存路径: {path dir %project.cache%/test.txt}"
 
 此外, 您在项目配置中定义的自定义环境变量也会被注入
 
-***
+
 
 ## 局部变量 — var
 
 用于在脚本执行期间存储临时数据:
 
-```
+```lvt
 var <变量名> <变量值>
 ```
 
@@ -88,13 +88,13 @@ echo ^greeting^ World!
 # 输出: Hello World!
 ```
 
-***
+
 
 ## 环境变量 — env
 
 在脚本中获取或设置环境变量, 可用于方法间的值传递:
 
-```
+```lvt
 env get <变量名>          # 获取环境变量值 (作为方法返回值)
 env set <变量名> <值>      # 设置环境变量
 ```
@@ -116,7 +116,7 @@ echo "构建模式: ^mode^"
 >
 > 脚本中设置的环境变量仅在当前解释器实例中有效, 脚本结束后不会保留
 
-***
+
 
 ## 别名
 
@@ -139,13 +139,13 @@ makeCleanup
 # 等价于: delete "%project.cache%"
 ```
 
-***
+
 
 ## echo
 
 输出文本到终端:
 
-```
+```lvt
 echo [内容]
 ```
 
@@ -157,13 +157,13 @@ echo "当前版本: %project.ver%"
 echo "构建路径: {path dir \"%project.output%\"}"
 ```
 
-***
+
 
 ## input
 
 显示提示文本并等待用户输入, 返回用户输入的内容:
 
-```
+```lvt
 input [提示文本]
 ```
 
@@ -174,13 +174,13 @@ var user_input {input "请输入您的名字: "}
 echo "你好, ^user_input^!"
 ```
 
-***
+
 
 ## run
 
 从脚本中执行另一个 Levitate Task 脚本:
 
-```
+```lvt
 run <脚本路径>        # 执行已有脚本
 run <脚本路径> new    # 使用新的解释器实例执行
 ```
@@ -194,13 +194,13 @@ run ./shulker/tasks/build.lvt
 run ./shulker/tasks/cleanup.lvt new
 ```
 
-***
+
 
 ## import
 
 导入扩展的 Levitate 方法和别名到当前解释器:
 
-```
+```lvt
 import <扩展ID>
 ```
 
@@ -215,13 +215,13 @@ import shulker.modrinth
 
 导入后, 该扩展提供的所有 Levitate 方法和别名都可以在当前脚本中使用
 
-***
+
 
 ## copy
 
 复制文件或目录:
 
-```
+```lvt
 copy <源路径> [目标路径] [是否覆盖] [忽略正则]
 ```
 
@@ -247,13 +247,13 @@ copy "./src/icon.png" "./build/icon.png"
 > [!NOTE]
 > `copy` 会自动创建不存在的目标目录
 
-***
+
 
 ## delete
 
 删除文件或目录:
 
-```
+```lvt
 delete <目标路径> [正则过滤]
 ```
 
@@ -271,7 +271,7 @@ delete "%project.cache%"
 delete "%project.cache%" "\.tmp$"
 ```
 
-***
+
 
 ## flat
 
@@ -299,13 +299,13 @@ flat "./src/" "./build/" true "\.meta$"
 
 `copy` 与 `flat` 的区别: `copy` 保留目录结构, `flat` 将所有文件放在同一目录下
 
-***
+
 
 ## sh
 
 执行外部 Shell 命令:
 
-```
+```lvt
 sh <可执行程序> [参数...]
 ```
 
@@ -323,13 +323,13 @@ Shell 命令的输出会实时打印到终端, 执行完成后会显示耗时
 > [!WARNING]
 > `sh` 命令直接调用系统进程, 注意不同操作系统的命令差异
 
-***
+
 
 ## verm
 
 版本管理 (Levitate 版本):
 
-```
+```lvt
 verm smajor            # 主版本号 +1
 verm sminor            # 次版本号 +1
 verm sfix              # 修订号 +1
@@ -352,13 +352,13 @@ echo "主版本号: ^major_ver^"
 > [!NOTE]
 > 执行 `verm` 修改版本号后, 会自动更新环境变量 `project.ver`
 
-***
+
 
 ## netfile
 
 还原网络链接文件:
 
-```
+```lvt
 netfile restore [源目录] [输出目录]
 # 或简写:
 netfile r [源目录] [输出目录]
@@ -373,13 +373,13 @@ netfile restore
 netfile restore "./downloads/" "./src/"
 ```
 
-***
+
 
 ## check
 
 条件检查 — 如果第一个参数为 `true`, 则执行后续方法:
 
-```
+```lvt
 check <条件> <方法名> [方法参数...]
 ```
 
@@ -396,13 +396,13 @@ check {path isdir "%project.cache%"} delete "%project.cache%"
 > [!NOTE]
 > `check` 仅在第一个参数严格等于 `"true"` 时才执行后续方法
 
-***
+
 
 ## path
 
 路径工具:
 
-```
+```lvt
 path remapper <基准路径> <目标路径> <目标根> [新扩展名]    # 路径重映射
 path dir <文件路径>                                      # 获取文件所在目录
 path isdir <路径>                                        # 判断是否为目录
@@ -423,13 +423,13 @@ var is_dir {path isdir "./src/assets"}
 check ^is_dir^ echo "assets 是一个目录"
 ```
 
-***
+
 
 ## list
 
 列表操作 — 使用 `|` 分隔的字符串模拟列表:
 
-```
+```lvt
 list get <列表字符串> <索引>           # 获取元素
 list set <列表字符串> <索引> <新值>    # 设置元素
 list add <列表字符串> <新元素>         # 添加元素
@@ -450,13 +450,13 @@ var my_list {list set ^my_list^ 1 "blueberry"}
 var my_list {list add ^my_list^ "date"}
 ```
 
-***
+
 
 ## regex
 
 正则表达式操作:
 
-```
+```lvt
 regex <正则表达式> match <测试字符串>              # 匹配检查
 regex <正则表达式> replace <测试字符串> <替换内容>  # 替换
 ```
@@ -473,13 +473,13 @@ echo "^result^"
 # 输出: hello-world
 ```
 
-***
+
 
 ## not
 
 布尔取反:
 
-```
+```lvt
 not <true/false>
 ```
 
@@ -490,13 +490,13 @@ var is_not_dir {not ^is_dir^}
 check ^is_not_dir^ echo "src 不是目录"
 ```
 
-***
+
 
 ## ifr
 
 文件内文本替换 (In-File Replacer):
 
-```
+```lvt
 ifr <查找文本> <替换文本> <文件路径>
 ```
 
@@ -514,13 +514,13 @@ ifr "{{VERSION}}" "%project.ver%" "./src/README.txt"
 >
 > 如需正则替换请使用 `regex replace`
 
-***
+
 
 ## pkgr
 
 打包/解包工具, 支持 zip 和 tar 格式:
 
-```
+```lvt
 pkgr zip make   <源目录> <输出路径>     # 创建 zip 压缩包
 pkgr zip tear   <压缩文件> <输出目录>    # 解压 zip 文件
 pkgr tar make   <源目录> <输出路径>     # 创建 tar 归档

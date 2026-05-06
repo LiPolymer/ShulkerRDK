@@ -26,7 +26,7 @@
 这个模板的默认项目名称为 `Template` , 您应该将其修改为您自己的项目名称
 
 您可以通过在交互模式中执行以下指令来修改项目名称 (这里假定您要修改为"My Project")
-```
+```lvt
 proj chname "My Project"
 ```
 > [!IMPORTANT]
@@ -89,7 +89,7 @@ proj chname "My Project"
 
 #### 第一次构建
 现在您可以使用以下命令来使用 ShulkerRDK 创建您项目
-```
+```lvt
 build
 ```
 执行后, 检查 `build` 文件夹, 您应该可以看到您的项目已经被自动打包了
@@ -114,7 +114,7 @@ build
 > 如果您在前面的步骤中安装了 Paxi, 请将`^gameRoot^\resourcepacks\debugging` 修改为 `^gameRoot^\config\paxi\resourcepacks\debugging`
 
 完成后, 您可以尝试使用以下命令启动客户端
-```
+```lvt
 dev
 ```
 
@@ -137,27 +137,27 @@ dev
 如果您想使用 ShulkerRDK 内置的版本管理来管理您的项目, 下面是相关的指令:
 
 展示版本号
-```
+```lvt
 verm show
 ```
 
 设置版本号 (这里假定您要设为 `1.0.0`)
-```
+```lvt
 verm set 1.0.0
 ```
 
 如果您要继续使用 `x.x.x` 格式的话,还可以使用下面的指令
 
 步进修复版本 (`x.x.x.` -> `x.x.x+1`)
-```
+```lvt
 verm  sfix
 ```
 步进小版本 (`x.x.x.` -> `x.x+1.x`)
-```
+```lvt
 verm sminor
 ```
 步进大版本 (`x.x.x.` -> `x+1.x.x`)
-```
+```lvt
 verm smajor
 ```
 

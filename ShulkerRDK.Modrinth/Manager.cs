@@ -1,8 +1,9 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Text.Json;
 using Modrinth;
 using Modrinth.Models;
 using Modrinth.Models.Enums;
+using Modrinth.Models.Enums.Project;
 using ShulkerRDK.Shared;
 using File = System.IO.File;
 using Version = Modrinth.Models.Version;
@@ -17,7 +18,33 @@ public class Manager {
         LevitateLogger ct = ec.Logger;
         ct.AddNode("&aModrinth");
         bool destroySource = true;
-        if (!Tools.TryGetSub(["r","s","e"],args,1,ct)) return null;
+        if (!Tools.TryGetSub(["r","s","e","a","u","add","update","export","lock","unlock"],args,1,ct)) return null;
+        switch (args[1]) {
+            case "a" or "add":
+                if (!Tools.CheckParamLength(args,2,ct)) return null;
+                if (args[2] == "-f") {
+                    if (!Tools.CheckParamLength(args,3,ct)) return null;
+                    string? levBatchOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                    Instance.AddBatch(args[3],levBatchOutputDir,ct);
+                } else {
+                    string? levAddVersion = Tools.CheckParamLength(args,3) ? args[3] : null;
+                    string? levAddOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                    Instance.Add(args[2],levAddVersion,levAddOutputDir,ct);
+                }
+                return null;
+            case "u" or "update":
+                string updateDir = Tools.CheckParamLength(args,2) ? args[2] : ".";
+                Instance.Update(updateDir,ct);
+                return null;
+            case "lock":
+                if (!Tools.CheckParamLength(args,2,ct)) return null;
+                Instance.SetLock(args[2],true,ct);
+                return null;
+            case "unlock":
+                if (!Tools.CheckParamLength(args,2,ct)) return null;
+                Instance.SetLock(args[2],false,ct);
+                return null;
+        }
         if (!Tools.CheckParamLength(args,2,ct)) return null;
         string to = args[2];
         if (Tools.CheckParamLength(args,3)) {
@@ -39,11 +66,39 @@ public class Manager {
     [Description("Modrinth平台操作")]
     public static void Command(string[] args,ShulkerContext shulkerContext) {
         ChainedTerminal ct = new ChainedTerminal("&aModrinth");
-        if (!Tools.TryGetSub(["restore","serialize","clean","r","s"],args,1,ct)) return;
-        string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
-        bool isOutMissing = !Tools.CheckParamLength(args,2);
-        string to = !isOutMissing ? args[3] : from;
-        TransitionLayer(args[1],from,to,isOutMissing,ct);
+        if (!Tools.TryGetSub(["restore","serialize","clean","export","add","update","lock","unlock","r","s","e","a","u"],args,1,ct)) return;
+        switch (args[1]) {
+            case "a" or "add":
+                if (!Tools.CheckParamLength(args,2,ct)) return;
+                if (args[2] == "-f") {
+                    if (!Tools.CheckParamLength(args,3,ct)) return;
+                    string? batchOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                    Instance.AddBatch(args[3],batchOutputDir,ct);
+                } else {
+                    string? addVersion = Tools.CheckParamLength(args,3) ? args[3] : null;
+                    string? addOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                    Instance.Add(args[2],addVersion,addOutputDir,ct);
+                }
+                break;
+            case "u" or "update":
+                string dir = Tools.CheckParamLength(args,2) ? args[2] : ".";
+                Instance.Update(dir,ct);
+                break;
+            case "lock":
+                if (!Tools.CheckParamLength(args,2,ct)) return;
+                Instance.SetLock(args[2],true,ct);
+                break;
+            case "unlock":
+                if (!Tools.CheckParamLength(args,2,ct)) return;
+                Instance.SetLock(args[2],false,ct);
+                break;
+            default:
+                string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
+                bool isOutMissing = !Tools.CheckParamLength(args,2);
+                string to = !isOutMissing ? args[3] : from;
+                TransitionLayer(args[1],from,to,isOutMissing,ct);
+                break;
+        }
     }
 
     static void TransitionLayer(string act,string from,string to,bool destroySource,IChainedLikeTerminal ct) {
@@ -238,5 +293,270 @@ public class Manager {
             Side.Unknown => "required",
             _ => throw new ArgumentOutOfRangeException(nameof(clientSide),clientSide,null)
         };
+    }
+
+    static (string slugOrId, string? versionId) ParseModrinthInput(string input) {
+        if (input.StartsWith("http",StringComparison.OrdinalIgnoreCase)) {
+            Uri uri = new Uri(input);
+            string[] segments = uri.AbsolutePath.Trim('/').Split('/');
+            // https://modrinth.com/{type}/{slug} or https://modrinth.com/{type}/{slug}/version/{vid}
+            if (segments.Length >= 2) {
+                string slug = segments[1];
+                string? versionId = null;
+                if (segments.Length >= 4 && segments[2] == "version") {
+                    versionId = segments[3];
+                }
+                return (slug,versionId);
+            }
+            throw new FormatException($"无法解析Modrinth URL: {input}");
+        }
+        return (input,null);
+    }
+
+    static global::Modrinth.Models.File GetPrimaryFile(Version version) {
+        return version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.First();
+    }
+
+    static string GetProjectSubfolder(Project project) {
+        return project.ProjectType switch {
+            ProjectType.Mod => "src/mods",
+            ProjectType.Resourcepack => "src/resourcepacks",
+            ProjectType.Shader => "src/shaderpacks",
+            ProjectType.Datapack => "src/datapacks",
+            ProjectType.Modpack => "src/modpacks",
+            _ => "src/mods"
+        };
+    }
+
+    static string GetMrfFileName(global::Modrinth.Models.File file) {
+        string raw = !string.IsNullOrEmpty(file.FileName)
+            ? file.FileName
+            : Path.GetFileName(new Uri(file.Url).AbsolutePath);
+        return $"{System.Net.WebUtility.UrlDecode(raw)}.mrf";
+    }
+
+    static (string[] loaders, string[] gameVersions) LoadMrpackDependencies() {
+        const string path = "./shulker/mrpack.template.json";
+        if (!File.Exists(path)) return ([],[]);
+        MrPack mrpack = MrPack.Load(path);
+        List<string> loaders = [];
+        List<string> gameVersions = [];
+        foreach (KeyValuePair<string,string> dep in mrpack.Dependencies) {
+            if (dep.Key == "minecraft") {
+                gameVersions.Add(dep.Value);
+            } else if (dep.Key.EndsWith("-loader")) {
+                loaders.Add(dep.Key[..^"-loader".Length]);
+            } else if (dep.Key is "forge" or "neoforge" or "quilt" or "fabric") {
+                loaders.Add(dep.Key);
+            }
+        }
+        return (loaders.ToArray(),gameVersions.ToArray());
+    }
+
+    void Add(string input,string? versionNumber,string? outputDir,IChainedLikeTerminal ct) {
+        ct?.WriteLine("&aModrinth &7添加资源");
+        (string slugOrId,string? versionId) = ParseModrinthInput(input);
+        ct?.WriteLine($"&7正在获取项目信息 &8[&7{slugOrId}&8]");
+
+        Task<Project> projectTask = _client.Project.GetAsync(slugOrId);
+        projectTask.Wait();
+        Project project = projectTask.Result;
+        ct?.WriteLine($"&a{project.Title} &8({project.ProjectType})");
+
+        string destDir = outputDir ?? GetProjectSubfolder(project);
+        (string[] loaders,string[] gameVersions) = LoadMrpackDependencies();
+
+        Version version;
+        if (versionId != null) {
+            Task<Version> verTask = _client.Version.GetAsync(versionId);
+            verTask.Wait();
+            version = verTask.Result;
+        } else if (versionNumber != null) {
+            Task<Version> verTask = _client.Version.GetByVersionNumberAsync(slugOrId,versionNumber);
+            verTask.Wait();
+            version = verTask.Result;
+        } else {
+            bool isMod = project.ProjectType == ProjectType.Mod;
+            Task<Version[]> listTask = _client.Version.GetProjectVersionListAsync(
+                project.Id,
+                isMod && loaders.Length > 0 ? loaders : null,
+                isMod && gameVersions.Length > 0 ? gameVersions : null);
+            listTask.Wait();
+            if (listTask.Result.Length == 0) {
+                Task<Version[]> allTask = _client.Version.GetProjectVersionListAsync(project.Id);
+                allTask.Wait();
+                version = allTask.Result.FirstOrDefault(v => v.ProjectVersionType == ProjectVersionType.Release) ?? allTask.Result.First();
+            } else {
+                version = listTask.Result.FirstOrDefault(v => v.ProjectVersionType == ProjectVersionType.Release) ?? listTask.Result.First();
+            }
+        }
+
+        ct?.WriteLine($"&7版本 &a{version.Name} &8({version.VersionNumber})");
+
+        global::Modrinth.Models.File file = GetPrimaryFile(version);
+        string cachePath = Path.Combine(LocalPath,file.Hashes.Sha1);
+        string displayName = !string.IsNullOrEmpty(file.FileName) ? System.Net.WebUtility.UrlDecode(file.FileName) : file.Hashes.Sha1;
+        ct?.WriteLine($"&7正在下载 &8{displayName}");
+        FileDownloader.DownloadFile(file.Url,cachePath);
+
+        string mrfPath = Path.Combine(destDir,GetMrfFileName(file));
+        Tools.WriteAllText(mrfPath,JsonSerializer.Serialize(new MrHostedFile {
+            Sha1 = file.Hashes.Sha1,
+            VersionId = version.Id,
+            ClientSide = project.ClientSide,
+            ServerSide = project.ServerSide
+        },Tools.JsonSerializerOptions));
+        ct?.WriteLine($"&a已添加 &7{project.Title} &8@&7{version.VersionNumber} &8-> &7{mrfPath}");
+    }
+
+    void AddBatch(string filePath,string? outputDir,IChainedLikeTerminal ct) {
+        ct.WriteLine($"&aModrinth &7批量添加资源");
+        if (!File.Exists(filePath)) {
+            ct.WriteLine($"&c文件不存在: {filePath}",Terminal.MessageType.Error);
+            return;
+        }
+        string[] lines = File.ReadAllLines(filePath);
+        List<string> entries = [];
+        foreach (string line in lines) {
+            string trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith('#')) continue;
+            entries.Add(trimmed);
+        }
+        ct.WriteLine($"&7共 &8[{entries.Count}] &7个资源");
+        int success = 0, failed = 0;
+        foreach (string entry in entries) {
+            try {
+                string[] parts = entry.Split(' ',2,StringSplitOptions.RemoveEmptyEntries);
+                string input = parts[0];
+                string? version = parts.Length > 1 ? parts[1] : null;
+                Add(input,version,outputDir,ct);
+                success++;
+            } catch (Exception e) {
+                ct.WriteLine($"&c失败 &8{entry}&7: {e.Message}",Terminal.MessageType.Error);
+                failed++;
+            }
+        }
+        ct.WriteLine($"&a完成! &7成功 &8[{success}] &7个" + (failed > 0 ? $", &c失败 &8[{failed}] &7个" : ""));
+    }
+
+    void Update(string directory,IChainedLikeTerminal ct) {
+        ct?.WriteLine("&aModrinth &7更新资源");
+        string[] mrfFiles = Directory.Exists(directory)
+            ? Directory.GetFiles(directory,"*.mrf",SearchOption.AllDirectories)
+            : [];
+        if (mrfFiles.Length == 0) {
+            ct?.WriteLine("&7未找到.mrf文件");
+            return;
+        }
+        ct?.WriteLine($"&7找到 &8[{mrfFiles.Length}] &7个资源文件");
+
+        (string[] loaders,string[] gameVersions) = LoadMrpackDependencies();
+
+        List<(string path,MrHostedFile mrf)> entries = [];
+        foreach (string file in mrfFiles) {
+            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
+            entries.Add((file,mrf));
+        }
+
+        Dictionary<string,Version> currentVersions = [];
+        string[] sha1s = entries.Select(e => e.mrf.Sha1).Distinct().ToArray();
+        try {
+            Task<IDictionary<string,Version>> hashTask = _client.VersionFile.GetMultipleVersionsByHashAsync(sha1s);
+            hashTask.Wait();
+            foreach (var kv in hashTask.Result) currentVersions[kv.Key] = kv.Value;
+        } catch {
+            ct?.WriteLine("&7哈希查询失败,尝试逐个查询...");
+            foreach (var entry in entries) {
+                try {
+                    Task<Version> verTask = _client.Version.GetAsync(entry.mrf.VersionId);
+                    verTask.Wait();
+                    currentVersions[entry.mrf.Sha1] = verTask.Result;
+                } catch {
+                    ct?.WriteLine($"&7跳过 &8{entry.path}");
+                }
+            }
+        }
+
+        Dictionary<string,Version[]> projectLatestVersions = [];
+        HashSet<string> seenProjects = [];
+        foreach (var kv in currentVersions) {
+            string projectId = kv.Value.ProjectId;
+            if (!seenProjects.Add(projectId)) continue;
+            try {
+                Task<Version[]> listTask = _client.Version.GetProjectVersionListAsync(projectId,loaders.Length > 0 ? loaders : null,gameVersions.Length > 0 ? gameVersions : null);
+                listTask.Wait();
+                projectLatestVersions[projectId] = listTask.Result;
+            } catch {
+                ct?.WriteLine($"&7无法获取项目 &8{projectId} &7的版本列表");
+            }
+        }
+
+        int updated = 0;
+        int skipped = 0;
+        foreach (var entry in entries) {
+            if (entry.mrf.Locked) {
+                skipped++;
+                continue;
+            }
+            if (!currentVersions.TryGetValue(entry.mrf.Sha1,out Version? currentVer)) continue;
+            if (!projectLatestVersions.TryGetValue(currentVer.ProjectId,out Version[]? latestVersions)) continue;
+
+            Version? latest = latestVersions.FirstOrDefault(v => v.ProjectVersionType == ProjectVersionType.Release) ?? latestVersions.FirstOrDefault();
+            if (latest == null || latest.Id == currentVer.Id) continue;
+
+            global::Modrinth.Models.File newFile = GetPrimaryFile(latest);
+            string cachePath = Path.Combine(LocalPath,newFile.Hashes.Sha1);
+            ct?.WriteLine($"&7正在更新 &8[&7{currentVer.Name}&8] &c{currentVer.VersionNumber} &7-> &a{latest.VersionNumber}");
+            FileDownloader.DownloadFile(newFile.Url,cachePath);
+
+            Tools.WriteAllText(entry.path,JsonSerializer.Serialize(new MrHostedFile {
+                Sha1 = newFile.Hashes.Sha1,
+                VersionId = latest.Id
+            },Tools.JsonSerializerOptions));
+            updated++;
+        }
+        ct?.WriteLine($"&a完成! &7已更新 &8[{updated}] &7个资源" + (skipped > 0 ? $", &e跳过 &8[{skipped}] &7个已锁定" : ""));
+    }
+
+    void SetLock(string input,bool lockState,IChainedLikeTerminal ct) {
+        string[] mrfFiles = Directory.Exists(".")
+            ? Directory.GetFiles(".","*.mrf",SearchOption.AllDirectories)
+            : [];
+
+        // 先尝试按文件名匹配
+        int count = 0;
+        foreach (string file in mrfFiles) {
+            string fileName = Path.GetFileName(file);
+            if (!fileName.Contains(input,StringComparison.OrdinalIgnoreCase)) continue;
+            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
+            mrf.Locked = lockState;
+            Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
+            ct?.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
+            count++;
+        }
+        if (count > 0) {
+            ct?.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
+            return;
+        }
+
+        // 文件名无匹配,尝试按项目ID/slug匹配
+        (string slugOrId,_) = ParseModrinthInput(input);
+        ct?.WriteLine($"&7文件名无匹配,正在获取项目信息 &8[&7{slugOrId}&8]");
+        Task<Project> projectTask = _client.Project.GetAsync(slugOrId);
+        projectTask.Wait();
+        Project project = projectTask.Result;
+        ct?.WriteLine($"&a{project.Title} &8({project.Id})");
+
+        foreach (string file in mrfFiles) {
+            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
+            Task<Version> verTask = _client.Version.GetAsync(mrf.VersionId);
+            verTask.Wait();
+            if (verTask.Result.ProjectId != project.Id) continue;
+            mrf.Locked = lockState;
+            Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
+            ct?.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
+            count++;
+        }
+        ct?.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
     }
 }
