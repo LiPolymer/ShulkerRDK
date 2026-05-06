@@ -295,8 +295,6 @@ public class Manager {
         };
     }
 
-    // --- New features: add / update ---
-
     static (string slugOrId, string? versionId) ParseModrinthInput(string input) {
         if (input.StartsWith("http",StringComparison.OrdinalIgnoreCase)) {
             Uri uri = new Uri(input);
