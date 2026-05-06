@@ -11,7 +11,7 @@ using Version = Modrinth.Models.Version;
 namespace ShulkerRDK.Modrinth;
 
 public class Manager {
-    public static readonly Manager Instance = new Manager();
+    static readonly Manager Instance = new Manager();
     public static ShulkerContext? Context;
     readonly ModrinthClient _client = new ModrinthClient();
     public static string? Method(string[] args,LevitateExecutionContext ec) {
@@ -335,8 +335,8 @@ public class Manager {
         return $"{System.Net.WebUtility.UrlDecode(raw)}.mrf";
     }
 
-    static (string[] loaders, string[] gameVersions) LoadMrpackDependencies() {
-        const string path = "./shulker/mrpack.template.json";
+    static (List<string> loaders, List<string> gameVersions) LoadMrpackDependencies() {
+        const string path = "./shulker/mrpack.template.json"; //todo: 支持从外部定义模板路径
         if (!File.Exists(path)) return ([],[]);
         MrPack mrpack = MrPack.Load(path);
         List<string> loaders = [];
@@ -350,21 +350,21 @@ public class Manager {
                 loaders.Add(dep.Key);
             }
         }
-        return (loaders.ToArray(),gameVersions.ToArray());
+        return (loaders,gameVersions);
     }
 
     void Add(string input,string? versionNumber,string? outputDir,IChainedLikeTerminal ct) {
-        ct?.WriteLine("&aModrinth &7添加资源");
+        ct.WriteLine("&aModrinth &7添加资源");
         (string slugOrId,string? versionId) = ParseModrinthInput(input);
-        ct?.WriteLine($"&7正在获取项目信息 &8[&7{slugOrId}&8]");
+        ct.WriteLine($"&7正在获取项目信息 &8[&7{slugOrId}&8]");
 
         Task<Project> projectTask = _client.Project.GetAsync(slugOrId);
         projectTask.Wait();
         Project project = projectTask.Result;
-        ct?.WriteLine($"&a{project.Title} &8({project.ProjectType})");
+        ct.WriteLine($"&a{project.Title} &8({project.ProjectType})");
 
         string destDir = outputDir ?? GetProjectSubfolder(project);
-        (string[] loaders,string[] gameVersions) = LoadMrpackDependencies();
+        (List<string> loaders,List<string> gameVersions) = LoadMrpackDependencies();
 
         Version version;
         if (versionId != null) {
@@ -379,8 +379,8 @@ public class Manager {
             bool isMod = project.ProjectType == ProjectType.Mod;
             Task<Version[]> listTask = _client.Version.GetProjectVersionListAsync(
                 project.Id,
-                isMod && loaders.Length > 0 ? loaders : null,
-                isMod && gameVersions.Length > 0 ? gameVersions : null);
+                isMod && loaders.Count > 0 ? loaders.ToArray() : null,
+                isMod && gameVersions.Count > 0 ? gameVersions.ToArray() : null);
             listTask.Wait();
             if (listTask.Result.Length == 0) {
                 Task<Version[]> allTask = _client.Version.GetProjectVersionListAsync(project.Id);
@@ -440,17 +440,17 @@ public class Manager {
     }
 
     void Update(string directory,IChainedLikeTerminal ct) {
-        ct?.WriteLine("&aModrinth &7更新资源");
+        ct.WriteLine("&aModrinth &7更新资源");
         string[] mrfFiles = Directory.Exists(directory)
             ? Directory.GetFiles(directory,"*.mrf",SearchOption.AllDirectories)
             : [];
         if (mrfFiles.Length == 0) {
-            ct?.WriteLine("&7未找到.mrf文件");
+            ct.WriteLine("&7未找到.mrf文件");
             return;
         }
-        ct?.WriteLine($"&7找到 &8[{mrfFiles.Length}] &7个资源文件");
+        ct.WriteLine($"&7找到 &8[{mrfFiles.Length}] &7个资源文件");
 
-        (string[] loaders,string[] gameVersions) = LoadMrpackDependencies();
+        (List<string> loaders,List<string> gameVersions) = LoadMrpackDependencies();
 
         List<(string path,MrHostedFile mrf)> entries = [];
         foreach (string file in mrfFiles) {
@@ -463,16 +463,16 @@ public class Manager {
         try {
             Task<IDictionary<string,Version>> hashTask = _client.VersionFile.GetMultipleVersionsByHashAsync(sha1s);
             hashTask.Wait();
-            foreach (var kv in hashTask.Result) currentVersions[kv.Key] = kv.Value;
+            foreach (KeyValuePair<string,Version> kv in hashTask.Result) currentVersions[kv.Key] = kv.Value;
         } catch {
-            ct?.WriteLine("&7哈希查询失败,尝试逐个查询...");
-            foreach (var entry in entries) {
+            ct.WriteLine("&7哈希查询失败,尝试逐个查询...");
+            foreach ((string path, MrHostedFile mrf) entry in entries) {
                 try {
                     Task<Version> verTask = _client.Version.GetAsync(entry.mrf.VersionId);
                     verTask.Wait();
                     currentVersions[entry.mrf.Sha1] = verTask.Result;
-                } catch {
-                    ct?.WriteLine($"&7跳过 &8{entry.path}");
+                } catch (Exception e) {
+                    ct.WriteLine($"&7获取版本时出现异常 &8[&7{e}&8] {entry.path}");
                 }
             }
         }
@@ -486,14 +486,14 @@ public class Manager {
                 Task<Version[]> listTask = _client.Version.GetProjectVersionListAsync(projectId,loaders.Length > 0 ? loaders : null,gameVersions.Length > 0 ? gameVersions : null);
                 listTask.Wait();
                 projectLatestVersions[projectId] = listTask.Result;
-            } catch {
-                ct?.WriteLine($"&7无法获取项目 &8{projectId} &7的版本列表");
+            } catch (Exception e) {
+                ct.WriteLine($"&7无法获取项目 &8{projectId} &7的版本列表 [{e.Message}]");
             }
         }
 
         int updated = 0;
         int skipped = 0;
-        foreach (var entry in entries) {
+        foreach ((string path, MrHostedFile mrf) entry in entries) {
             if (entry.mrf.Locked) {
                 skipped++;
                 continue;
@@ -506,7 +506,7 @@ public class Manager {
 
             global::Modrinth.Models.File newFile = GetPrimaryFile(latest);
             string cachePath = Path.Combine(LocalPath,newFile.Hashes.Sha1);
-            ct?.WriteLine($"&7正在更新 &8[&7{currentVer.Name}&8] &c{currentVer.VersionNumber} &7-> &a{latest.VersionNumber}");
+            ct.WriteLine($"&7正在更新 &8[&7{currentVer.Name}&8] &c{currentVer.VersionNumber} &7-> &a{latest.VersionNumber}");
             FileDownloader.DownloadFile(newFile.Url,cachePath);
 
             Tools.WriteAllText(entry.path,JsonSerializer.Serialize(new MrHostedFile {
@@ -515,7 +515,7 @@ public class Manager {
             },Tools.JsonSerializerOptions));
             updated++;
         }
-        ct?.WriteLine($"&a完成! &7已更新 &8[{updated}] &7个资源" + (skipped > 0 ? $", &e跳过 &8[{skipped}] &7个已锁定" : ""));
+        ct.WriteLine($"&a完成! &7已更新 &8[{updated}] &7个资源" + (skipped > 0 ? $", &e跳过 &8[{skipped}] &7个已锁定" : ""));
     }
 
     void SetLock(string input,bool lockState,IChainedLikeTerminal ct) {
@@ -531,14 +531,15 @@ public class Manager {
             MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
             mrf.Locked = lockState;
             Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
-            ct?.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
+            ct.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
             count++;
         }
         if (count > 0) {
-            ct?.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
+            ct.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
             return;
         }
 
+        
         // 文件名无匹配,尝试按项目ID/slug匹配
         (string slugOrId,_) = ParseModrinthInput(input);
         ct?.WriteLine($"&7文件名无匹配,正在获取项目信息 &8[&7{slugOrId}&8]");
