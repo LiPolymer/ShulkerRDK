@@ -545,22 +545,26 @@ public class Manager {
         
         // 文件名无匹配,尝试按项目ID/slug匹配
         (string slugOrId,_) = ParseModrinthInput(input);
-        ct?.WriteLine($"&7文件名无匹配,正在获取项目信息 &8[&7{slugOrId}&8]");
-        Task<Project> projectTask = _client.Project.GetAsync(slugOrId);
-        projectTask.Wait();
-        Project project = projectTask.Result;
-        ct?.WriteLine($"&a{project.Title} &8({project.Id})");
-
-        foreach (string file in mrfFiles) {
-            MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
-            Task<Version> verTask = _client.Version.GetAsync(mrf.VersionId);
-            verTask.Wait();
-            if (verTask.Result.ProjectId != project.Id) continue;
-            mrf.Locked = lockState;
-            Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
-            ct?.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
-            count++;
+        ct.WriteLine($"&7文件名无匹配,正在获取项目信息 &8[&7{slugOrId}&8]");
+        try {
+            Task<Project> projectTask = _client.Project.GetAsync(slugOrId);
+            projectTask.Wait();
+            Project project = projectTask.Result;
+            ct.WriteLine($"&a{project.Title} &8({project.Id})");
+            foreach (string file in mrfFiles) {
+                MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
+                Task<Version> verTask = _client.Version.GetAsync(mrf.VersionId);
+                verTask.Wait();
+                if (verTask.Result.ProjectId != project.Id) continue;
+                mrf.Locked = lockState;
+                Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
+                ct.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
+                count++;
+            }
+            ct.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
         }
-        ct?.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
+        catch (Exception e) {
+            ct.WriteLine($"&8未能查找到对应项目[{e.Message}]");
+        }
     }
 }
