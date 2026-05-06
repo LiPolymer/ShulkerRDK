@@ -315,12 +315,13 @@ public class Manager {
 
     static string GetProjectSubfolder(Project project) {
         return project.ProjectType switch {
-            ProjectType.Mod => "src/mods",
-            ProjectType.Resourcepack => "src/resourcepacks",
-            ProjectType.Shader => "src/shaderpacks",
-            ProjectType.Datapack => "src/datapacks",
-            ProjectType.Modpack => "src/modpacks",
-            _ => "src/mods"
+            ProjectType.Mod => Path.Combine(Context!.ProjectConfig!.RootPath, "mods/"),
+            ProjectType.Resourcepack => Path.Combine(Context!.ProjectConfig!.RootPath, "resourcepacks/"),
+            ProjectType.Shader => Path.Combine(Context!.ProjectConfig!.RootPath, "shaderpacks/"),
+            ProjectType.Datapack => Path.Combine(Context!.ProjectConfig!.RootPath, "datapacks/"),
+            ProjectType.Modpack => Path.Combine(Context!.ProjectConfig!.RootPath, "modpacks/"),
+            ProjectType.Plugin => Path.Combine(Context!.ProjectConfig!.RootPath, "plugins/"),
+            _ => throw new ArgumentOutOfRangeException(nameof(project),"Unsupported ProjectType")
         };
     }
 
