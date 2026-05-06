@@ -8,6 +8,9 @@ export default withMermaid(
     cleanUrls: true,
     base: "/ShulkerRDK/",
     description: "下一代MC低代码内容开发工具",
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/ShulkerRDK/images/srdk.svg' }]
+    ],
     themeConfig: {
       // https://vitepress.dev/reference/default-theme-config
       nav: [
