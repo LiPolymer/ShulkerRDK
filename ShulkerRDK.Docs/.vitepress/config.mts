@@ -43,9 +43,9 @@ export default withMermaid(
             { text: '核心扩展', items:[
               { text: '指令', link: '/brochure/core/commands' },
               { text: 'Levitate', link: '/brochure/core/levitate' },
-              { text: '启动行动', link: '/brochure/core/startupActions' },
-              { text: 'mrp (Modrinth)', link: '/brochure/core/mrp' }
-            ]}
+              { text: '启动行动', link: '/brochure/core/startupActions' }
+            ]},
+            { text: 'Modrinth平台扩展', link: '/brochure/core/mrp' }
           ]
         }
       ],

@@ -1,8 +1,8 @@
-# mrp - Modrinth 平台支持
+# ModrinthPSK - Modrinth 平台支持
 
-`mrp` (Modrinth Platform) 是 ShulkerRDK 的 Modrinth 平台集成扩展, 用于管理托管在 [Modrinth](https://modrinth.com) 上的资源文件
+ModrinthPSK 是 ShulkerRDK 的 Modrinth 平台集成扩展, 用于管理托管在 [Modrinth](https://modrinth.com) 上的资源文件
 
-通过将大体积的 Mod/资源包文件替换为小型 `.mrf` (Modrinth Resource File) 引用文件, 可以大幅减小 Git 仓库体积
+通过将大体积的 Mod/资源包文件替换为小型 `.mrf` (Modrinth Resource File) 引用文件, 可以大幅减小 Git 仓库体积并减少二进制文件数量
 
 ## .mrf 文件格式
 
