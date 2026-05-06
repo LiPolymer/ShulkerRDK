@@ -429,7 +429,7 @@ public class Manager {
                 string[] parts = entry.Split(' ',2,StringSplitOptions.RemoveEmptyEntries);
                 string input = parts[0];
                 string? version = parts.Length > 1 ? parts[1] : null;
-                Add(input,version,outputDir,ct);
+                Add(input,version,outputDir,ct!);
                 success++;
             } catch (Exception e) {
                 ct?.WriteLine($"&c失败 &8{entry}&7: {e.Message}",Terminal.MessageType.Error);
