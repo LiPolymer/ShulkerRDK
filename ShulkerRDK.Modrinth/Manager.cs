@@ -410,9 +410,9 @@ public class Manager {
     }
 
     void AddBatch(string filePath,string? outputDir,IChainedLikeTerminal ct) {
-        ct?.WriteLine($"&aModrinth &7批量添加资源");
+        ct.WriteLine($"&aModrinth &7批量添加资源");
         if (!File.Exists(filePath)) {
-            ct?.WriteLine($"&c文件不存在: {filePath}",Terminal.MessageType.Error);
+            ct.WriteLine($"&c文件不存在: {filePath}",Terminal.MessageType.Error);
             return;
         }
         string[] lines = File.ReadAllLines(filePath);
@@ -422,21 +422,21 @@ public class Manager {
             if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith('#')) continue;
             entries.Add(trimmed);
         }
-        ct?.WriteLine($"&7共 &8[{entries.Count}] &7个资源");
+        ct.WriteLine($"&7共 &8[{entries.Count}] &7个资源");
         int success = 0, failed = 0;
         foreach (string entry in entries) {
             try {
                 string[] parts = entry.Split(' ',2,StringSplitOptions.RemoveEmptyEntries);
                 string input = parts[0];
                 string? version = parts.Length > 1 ? parts[1] : null;
-                Add(input,version,outputDir,ct!);
+                Add(input,version,outputDir,ct);
                 success++;
             } catch (Exception e) {
-                ct?.WriteLine($"&c失败 &8{entry}&7: {e.Message}",Terminal.MessageType.Error);
+                ct.WriteLine($"&c失败 &8{entry}&7: {e.Message}",Terminal.MessageType.Error);
                 failed++;
             }
         }
-        ct?.WriteLine($"&a完成! &7成功 &8[{success}] &7个" + (failed > 0 ? $", &c失败 &8[{failed}] &7个" : ""));
+        ct.WriteLine($"&a完成! &7成功 &8[{success}] &7个" + (failed > 0 ? $", &c失败 &8[{failed}] &7个" : ""));
     }
 
     void Update(string directory,IChainedLikeTerminal ct) {
