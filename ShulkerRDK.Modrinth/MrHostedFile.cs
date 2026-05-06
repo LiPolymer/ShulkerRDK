@@ -9,7 +9,9 @@ public class MrHostedFile {
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Side? ServerSide { get; set; }
-    
+
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public Side? ClientSide { get; set; }
+
+    public bool Locked { get; set; }
 }
