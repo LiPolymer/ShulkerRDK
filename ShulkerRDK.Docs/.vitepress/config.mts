@@ -45,7 +45,7 @@ export default withMermaid(
               { text: 'Levitate', link: '/brochure/core/levitate' },
               { text: '启动行动', link: '/brochure/core/startupActions' }
             ]},
-            { text: 'Modrinth平台扩展', link: '/brochure/core/mrp' }
+            { text: 'Modrinth平台扩展', link: '/brochure/shulker.modrinth' }
           ]
         }
       ],
