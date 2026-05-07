@@ -19,33 +19,19 @@ public class Manager {
         ct.AddNode("&aModrinth");
         bool destroySource = true;
         if (!Tools.TryGetSub(["r","s","e","a","u","add","update","export","lock","unlock"],args,1,ct)) return null;
-        switch (args[1]) {
-            case "a" or "add":
-                if (!Tools.CheckParamLength(args,2,ct)) return null;
-                if (args[2] == "-f") {
-                    if (!Tools.CheckParamLength(args,3,ct)) return null;
-                    string? levBatchOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
-                    Instance.AddBatch(args[3],levBatchOutputDir,ct);
-                } else {
-                    string? levAddVersion = Tools.CheckParamLength(args,3) ? args[3] : null;
-                    string? levAddOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
-                    Instance.Add(args[2],levAddVersion,levAddOutputDir,ct);
-                }
-                return null;
-            case "u" or "update":
-                string updateDir = Tools.CheckParamLength(args,2) ? args[2] : ".";
-                Instance.Update(updateDir,ct);
-                return null;
-            case "lock":
-                if (!Tools.CheckParamLength(args,2,ct)) return null;
-                Instance.SetLock(args[2],true,ct);
-                return null;
-            case "unlock":
-                if (!Tools.CheckParamLength(args,2,ct)) return null;
-                Instance.SetLock(args[2],false,ct);
-                return null;
-        }
         if (!Tools.CheckParamLength(args,2,ct)) return null;
+        if (args[1] == "a" || args[1] == "add") {
+            if (args[2] == "-f") {
+                if (!Tools.CheckParamLength(args,3,ct)) return null;
+                string? levBatchOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                Instance.AddBatch(args[3],levBatchOutputDir,ct);
+            } else {
+                string? levAddVersion = Tools.CheckParamLength(args,3) ? args[3] : null;
+                string? levAddOutputDir = Tools.CheckParamLength(args,4) ? args[4] : null;
+                Instance.Add(args[2],levAddVersion,levAddOutputDir,ct);
+            }
+            return null;
+        }
         string to = args[2];
         if (Tools.CheckParamLength(args,3)) {
             to = args[3];
@@ -80,21 +66,9 @@ public class Manager {
                     Instance.Add(args[2],addVersion,addOutputDir,ct);
                 }
                 break;
-            case "u" or "update":
-                string dir = Tools.CheckParamLength(args,2) ? args[2] : ".";
-                Instance.Update(dir,ct);
-                break;
-            case "lock":
-                if (!Tools.CheckParamLength(args,2,ct)) return;
-                Instance.SetLock(args[2],true,ct);
-                break;
-            case "unlock":
-                if (!Tools.CheckParamLength(args,2,ct)) return;
-                Instance.SetLock(args[2],false,ct);
-                break;
             default:
                 string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
-                bool isOutMissing = !Tools.CheckParamLength(args,2);
+                bool isOutMissing = !Tools.CheckParamLength(args,3);
                 string to = !isOutMissing ? args[3] : from;
                 TransitionLayer(args[1],from,to,isOutMissing,ct);
                 break;
@@ -111,6 +85,15 @@ public class Manager {
                 break;
             case "e" or "export":
                 Instance.Indexer("./shulker/mrpack.template.json",from,to,ct,destroySource);
+                break;
+            case "u" or "update":
+                Instance.Update(from,ct);
+                break;
+            case "lock":
+                Instance.SetLock(from,true,ct);
+                break;
+            case "unlock":
+                Instance.SetLock(from,false,ct);
                 break;
             case "clean":
                 Cleanup(ct);
