@@ -286,7 +286,7 @@ public class Manager {
         if (segments.Length < 2) throw new FormatException($"无法解析Modrinth URL: {input}");
         string slug = segments[1];
         string? versionId = null;
-        if (segments.Length >= 4 && segments[2] == "version") {
+        if (segments is [_,_,"version",_,..]) {
             versionId = segments[3];
         }
         return (slug,versionId);
@@ -371,12 +371,12 @@ public class Manager {
             }
         }
 
-        ct?.WriteLine($"&7版本 &a{version.Name} &8({version.VersionNumber})");
+        ct.WriteLine($"&7版本 &a{version.Name} &8({version.VersionNumber})");
 
         global::Modrinth.Models.File file = GetPrimaryFile(version);
         string cachePath = Path.Combine(LocalPath,file.Hashes.Sha1);
         string displayName = !string.IsNullOrEmpty(file.FileName) ? System.Net.WebUtility.UrlDecode(file.FileName) : file.Hashes.Sha1;
-        ct?.WriteLine($"&7正在下载 &8{displayName}");
+        ct.WriteLine($"&7正在下载 &8{displayName}");
         FileDownloader.DownloadFile(file.Url,cachePath);
 
         string mrfPath = Path.Combine(destDir,GetMrfFileName(file));
@@ -386,7 +386,7 @@ public class Manager {
             ClientSide = project.ClientSide,
             ServerSide = project.ServerSide
         },Tools.JsonSerializerOptions));
-        ct?.WriteLine($"&a已添加 &7{project.Title} &8@&7{version.VersionNumber} &8-> &7{mrfPath}");
+        ct.WriteLine($"&a已添加 &7{project.Title} &8@&7{version.VersionNumber} &8-> &7{mrfPath}");
     }
 
     void AddBatch(string filePath,string? outputDir,IChainedLikeTerminal ct) {
@@ -524,8 +524,8 @@ public class Manager {
             ct.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
             return;
         }
-
-        
+        ct.WriteLine($"&7文件名无匹配");
+        /*
         // 文件名无匹配,尝试按项目ID/slug匹配
         (string slugOrId,_) = ParseModrinthInput(input);
         ct.WriteLine($"&7文件名无匹配,正在获取项目信息 &8[&7{slugOrId}&8]");
@@ -548,6 +548,6 @@ public class Manager {
         }
         catch (Exception e) {
             ct.WriteLine($"&8未能查找到对应项目[{e.Message}]");
-        }
+        }*/
     }
 }

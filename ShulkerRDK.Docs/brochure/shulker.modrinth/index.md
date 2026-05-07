@@ -34,8 +34,8 @@ mrp export   [源目录] [输出目录]      (或 mrp e)    # 构建 .mrpack 索
 mrp add      <URL或ID> [版本] [目录]  (或 mrp a)    # 添加新资源
 mrp add -f   <文件路径> [目录]        (或 mrp a -f) # 批量添加资源
 mrp update   [目录]                   (或 mrp u)    # 更新到最新版本
-mrp lock     <文件名或ID>                          # 锁定不被更新
-mrp unlock   <文件名或ID>                          # 解锁允许更新
+mrp lock     <部分文件名>                          # 锁定不被更新
+mrp unlock   <部分文件名>                          # 解锁允许更新
 mrp clean                                       # 清理本地缓存
 ```
 
@@ -199,13 +199,11 @@ Modrinth 更新资源
 锁定资源使其不被 `mrp update` 更新:
 
 ```lvt
-mrp lock <文件名或项目ID>             # 锁定
-mrp unlock <文件名或项目ID>           # 解锁
+mrp lock <部分文件名>             # 锁定
+mrp unlock <部分文件名>           # 解锁
 ```
 
-**匹配方式:**
-1. **按文件名** - 匹配文件名包含输入内容的 `.mrf` 文件 (无需网络请求)
-2. **按项目 ID/slug** - 文件名无匹配时, 通过 Modrinth API 查询项目
+**匹配方式:** **按文件名** - 匹配文件名包含输入内容的 `.mrf` 文件
 
 **示例:**
 ```
@@ -213,7 +211,7 @@ mrp unlock <文件名或项目ID>           # 解锁
 已锁定 src/mods/sodium-fabric-0.6.13+mc1.21.4.jar.mrf
 完成! 已锁定 [1] 个资源
 
->mrp lock sodium
+>mrp lock sodi
 已锁定 src/mods/sodium-fabric-0.6.13+mc1.21.4.jar.mrf
 完成! 已锁定 [1] 个资源
 
