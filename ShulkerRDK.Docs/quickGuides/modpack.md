@@ -112,9 +112,9 @@ verm  sfix
 步进小版本 (`x.x.x.` -> `x.x+1.x`)
 ```lvt
 verm sminor
-```lvt
-步进大版本 (`x.x.x.` -> `x+1.x.x`)
 ```
+步进大版本 (`x.x.x.` -> `x+1.x.x`)
+```lvt
 verm smajor
 ```
 
