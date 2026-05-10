@@ -1,97 +1,193 @@
 {
-  "scopeName": "source.lvt",
-  "name": "Levitate",
-  "fileTypes": ["lvt"],
-  "patterns": [
-    { "include": "#comment" },
-    { "include": "#expression" },
-    { "include": "#envVar" },
-    { "include": "#variable" },
-    { "include": "#string" },
-    { "include": "#keyword" }
-  ],
-  "repository": {
-    "comment": {
-      "patterns": [
-        {
-          "name": "comment.line.number-sign.lvt",
-          "match": "#.*$"
-        }
-      ]
-    },
-    "expression": {
-      "patterns": [
-        {
-          "name": "meta.expression.lvt",
-          "begin": "(?<!\\{)\\{(?!\\{)",
-          "end": "(?<!\\})\\}(?!\\})",
-          "beginCaptures": {
-            "0": { "name": "punctuation.section.expression.begin.lvt" }
-          },
-          "endCaptures": {
-            "0": { "name": "punctuation.section.expression.end.lvt" }
-          },
-          "patterns": [
-            { "include": "#envVar" },
-            { "include": "#variable" },
-            { "include": "#string" },
-            { "include": "#keyword" },
-            { "include": "#subcommand" }
-          ]
-        }
-      ]
-    },
-    "envVar": {
-      "patterns": [
-        {
-          "name": "variable.other.environment.lvt",
-          "match": "%[\\w.]+%"
-        }
-      ]
-    },
-    "variable": {
-      "patterns": [
-        {
-          "name": "variable.other.lvt",
-          "match": "\\^[\\w]+\\^"
-        }
-      ]
-    },
-    "string": {
-      "patterns": [
-        {
-          "name": "string.quoted.double.lvt",
-          "begin": "\"",
-          "end": "\"",
-          "beginCaptures": {
-            "0": { "name": "punctuation.definition.string.begin.lvt" }
-          },
-          "endCaptures": {
-            "0": { "name": "punctuation.definition.string.end.lvt" }
-          }
-        }
-      ]
-    },
-    "keyword": {
-      "patterns": [
-        {
-          "name": "keyword.control.lvt",
-          "match": "\\b(run|import|echo|input|var|env|copy|delete|sh|flat|verm|netfile|check|path|list|regex|not|ifr|pkgr|mrp|a2ogg|ase|psdcvt|pbrex|rrt|pw|exit|clear|help|proj|ext|task|reload|true|false|new)\\b"
-        },
-        {
-          "name": "support.function.alias.lvt",
-          "match": "\\b(makeCleanup|makeCopy|makePkg|psdCvt|pbrEx)\\b"
-        },
-        { "include": "#subcommand" }
-      ]
-    },
-    "subcommand": {
-      "patterns": [
-        {
-          "name": "keyword.other.subcommand.lvt",
-          "match": "\\b(get|set|add|remove|list|restore|r|serialize|s|export|e|update|u|lock|unlock|clean|smajor|sminor|sfix|remapper|dir|isdir|match|replace|make|tear|zip|tar|start|stop|mono|info|chname|chroot|chout|show|create|lookup|commands|alias)\\b"
-        }
-      ]
-    }
-  }
+	"scopeName": "source.lvt",
+	"name": "Levitate",
+	"fileTypes": ["lvt"],
+	"patterns": [{ "include": "#comment" }, { "include": "#statement" }],
+	"repository": {
+		"comment": {
+			"patterns": [
+				{
+					"name": "comment.line.number-sign.lvt",
+					"match": "(#)(.*)$",
+					"captures": {
+						"1": { "name": "punctuation.definition.comment.lvt" },
+						"2": { "name": "comment.line.number-sign.lvt" }
+					}
+				}
+			]
+		},
+		"statement": {
+			"patterns": [
+				{
+					"name": "meta.statement.lvt",
+					"begin": "^\\s*",
+					"end": "$",
+					"beginCaptures": {
+						"0": { "name": "punctuation.definition.statement.begin.lvt" }
+					},
+					"patterns": [
+						{ "include": "#varDecl" },
+						{ "include": "#importDecl" },
+						{ "include": "#keywordScript" },
+						{ "include": "#keywordRepl" },
+						{ "include": "#alias" },
+						{ "include": "#subcommand" },
+						{ "include": "#flag" },
+						{ "include": "#filePath" },
+						{ "include": "#expression" },
+						{ "include": "#envVar" },
+						{ "include": "#variable" },
+						{ "include": "#string" },
+						{ "include": "#bareWord" }
+					]
+				}
+			]
+		},
+		"varDecl": {
+			"patterns": [
+				{
+					"name": "meta.var-declaration.lvt",
+					"match": "(\\bvar)\\s+(\\w+)",
+					"captures": {
+						"1": { "name": "keyword.control.lvt" },
+						"2": { "name": "entity.name.variable.lvt" }
+					}
+				}
+			]
+		},
+		"importDecl": {
+			"patterns": [
+				{
+					"name": "meta.import-declaration.lvt",
+					"match": "(\\bimport)\\s+([\\w.]+)",
+					"captures": {
+						"1": { "name": "keyword.control.import.lvt" },
+						"2": { "name": "entity.name.namespace.lvt" }
+					}
+				}
+			]
+		},
+		"keywordScript": {
+			"patterns": [
+				{
+					"name": "keyword.control.lvt",
+					"match": "\\b(run|echo|input|env|copy|delete|sh|flat|verm|netfile|check|path|list|regex|not|ifr|pkgr|mrp|a2ogg|ase|psdcvt|pbrex|rrt|pw|true|false|new)\\b"
+				}
+			]
+		},
+		"keywordRepl": {
+			"patterns": [
+				{
+					"name": "keyword.control.repl-only.lvt",
+					"match": "\\b(exit|clear|help|proj|ext|task|reload)\\b"
+				}
+			]
+		},
+		"alias": {
+			"patterns": [
+				{
+					"name": "support.function.alias.lvt",
+					"match": "\\b(makeCleanup|makeCopy|makePkg|psdCvt|pbrEx)\\b"
+				}
+			]
+		},
+		"subcommand": {
+			"patterns": [
+				{
+					"name": "support.function.lvt",
+					"match": "\\b(get|set|add|a|remove|list|restore|r|serialize|s|export|e|update|u|lock|unlock|clean|smajor|sminor|sfix|remapper|dir|isdir|match|replace|make|tear|zip|tar|start|stop|mono|info|chname|chroot|chout|show|create|lookup|commands|alias)\\b"
+				}
+			]
+		},
+		"expression": {
+			"patterns": [
+				{
+					"name": "meta.expression.lvt",
+					"begin": "\\{",
+					"end": "\\}",
+					"beginCaptures": {
+						"0": { "name": "punctuation.section.expression.begin.lvt" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.section.expression.end.lvt" }
+					},
+					"patterns": [
+						{ "include": "#expression" },
+						{ "include": "#varDecl" },
+						{ "include": "#importDecl" },
+						{ "include": "#keywordScript" },
+						{ "include": "#keywordRepl" },
+						{ "include": "#subcommand" },
+						{ "include": "#flag" },
+						{ "include": "#filePath" },
+						{ "include": "#envVar" },
+						{ "include": "#variable" },
+						{ "include": "#string" },
+						{ "include": "#bareWord" }
+					]
+				}
+			]
+		},
+		"bareWord": {
+			"patterns": [
+				{
+					"name": "entity.name.tag.lvt",
+					"match": "\\b\\w+\\b"
+				}
+			]
+		},
+		"flag": {
+			"patterns": [
+				{
+					"name": "variable.parameter.option.lvt",
+					"match": "--\\w+(-\\w+)*|-\\w+"
+				}
+			]
+		},
+		"filePath": {
+			"patterns": [
+				{
+					"name": "string.unquoted.path.lvt",
+					"match": "(?:\\.{1,2}[\\/\\\\])?[\\w.-]+(?:[\\/\\\\][\\w.\\-\\\\/]+)+"
+				}
+			]
+		},
+		"envVar": {
+			"patterns": [
+				{
+					"name": "variable.other.environment.lvt",
+					"match": "%[\\w.]+%"
+				}
+			]
+		},
+		"variable": {
+			"patterns": [
+				{
+					"name": "variable.other.lvt",
+					"match": "\\^[\\w]+\\^"
+				}
+			]
+		},
+		"string": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.lvt",
+					"begin": "\"",
+					"end": "\"(?<!\\\\)",
+					"beginCaptures": {
+						"0": { "name": "punctuation.definition.string.begin.lvt" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.definition.string.end.lvt" }
+					},
+					"patterns": [
+						{
+							"name": "constant.character.escape.lvt",
+							"match": "\\\\.|\\\\$"
+						}
+					]
+				}
+			]
+		}
+	}
 }
