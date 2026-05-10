@@ -12,9 +12,9 @@
           <Private>false</Private>
           <ExcludeAssets>runtime</ExcludeAssets>
       </ProjectReference>
-      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Abstractions\Trident.Abstractions.csproj" />
-      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Core\Trident.Core.csproj" />
-      <ProjectReference Include="..\submodules\Trident.Net\src\Trident.Purl\Trident.Purl.csproj" />
+      <ProjectReference Include="..\submodules\Trident.Net\src\TridentCore.Abstractions\TridentCore.Abstractions.csproj" />
+      <ProjectReference Include="..\submodules\Trident.Net\src\TridentCore.Core\TridentCore.Core.csproj" />
+      <ProjectReference Include="..\submodules\Trident.Net\src\TridentCore.Purl\TridentCore.Purl.csproj" />
     </ItemGroup>
 
 </Project>

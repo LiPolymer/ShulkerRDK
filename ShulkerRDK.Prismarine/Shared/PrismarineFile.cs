@@ -1,8 +1,8 @@
 ﻿using System.Text.Json;
 using ShulkerRDK.Shared;
-using Trident.Abstractions.Repositories;
-using Trident.Abstractions.Repositories.Resources;
-using Trident.Abstractions.Utilities;
+using TridentCore.Abstractions.Repositories;
+using TridentCore.Abstractions.Repositories.Resources;
+using TridentCore.Abstractions.Utilities;
 
 namespace ShulkerRDK.Prismarine.Shared;
 

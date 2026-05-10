@@ -11,9 +11,9 @@
     <Project Path="TestExtension/TestExtension.csproj" />
   </Folder>
   <Folder Name="/Trident.Net/">
-    <Project Path="submodules\Trident.Net\src\Trident.Abstractions\Trident.Abstractions.csproj" />
-    <Project Path="submodules\Trident.Net\src\Trident.Cli\Trident.Cli.csproj" />
-    <Project Path="submodules\Trident.Net\src\Trident.Core\Trident.Core.csproj" />
-    <Project Path="submodules\Trident.Net\src\Trident.Purl\Trident.Purl.csproj" />
+    <Project Path="submodules\Trident.Net\src\TridentCore.Abstractions\TridentCore.Abstractions.csproj" />
+    <Project Path="submodules\Trident.Net\src\TridentCore.Cli\TridentCore.Cli.csproj" />
+    <Project Path="submodules\Trident.Net\src\TridentCore.Core\TridentCore.Core.csproj" />
+    <Project Path="submodules\Trident.Net\src\TridentCore.Purl\TridentCore.Purl.csproj" />
   </Folder>
 </Solution>
