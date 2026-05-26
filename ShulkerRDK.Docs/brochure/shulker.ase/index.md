@@ -72,7 +72,7 @@ ase <路径> [输出路径]
 | 变体 | 输出文件名 |
 |------|------------|
 | 基础变体 | `{文件名}.png` |
-| 标签变体 | `{文件名}#{标签}.png` |
+| 标签变体 | `{文件名}{标签}.png` |
 
 ### 示例
 
@@ -82,10 +82,10 @@ ase <路径> [输出路径]
 character.aseprite
 ├── body            (基础图层)
 ├── eyes            (基础图层)
-├── armor#iron      (铁盔甲图层)
-├── helmet#iron     (铁头盔图层)
-├── armor#gold      (金盔甲图层)
-├── helmet#gold     (金头盔图层)
+├── armor#_iron      (铁盔甲图层)
+├── helmet#_iron     (铁头盔图层)
+├── armor#_gold      (金盔甲图层)
+├── helmet#_gold     (金头盔图层)
 ├── #disableBase    (禁用基础变体)
 ```
 
@@ -96,8 +96,8 @@ ase character.aseprite
 
 **输出:**
 ```
-character#iron.png    (body + eyes + armor 铁 + helmet 铁)
-character#gold.png    (body + eyes + armor 金 + helmet 金)
+character_iron.png    (body + eyes + armor 铁 + helmet 铁)
+character_gold.png    (body + eyes + armor 金 + helmet 金)
 ```
 
 > [!NOTE]
@@ -111,14 +111,14 @@ character#gold.png    (body + eyes + armor 金 + helmet 金)
 tree.aseprite
 ├── trunk
 ├── leaves
-├── leaves#autumn     (秋季叶子, 覆盖 leaves)
-├── trunk#autumn      (秋季树干, 覆盖 trunk)
+├── leaves#_autumn     (秋季叶子, 覆盖 leaves)
+├── trunk#_autumn      (秋季树干, 覆盖 trunk)
 ```
 
 输出:
 ```
 tree.png              (trunk + leaves)
-tree#autumn.png       (trunk + leaves, 其中 leaves/trunk 被 #autumn 图层覆盖)
+tree_autumn.png       (trunk + leaves, 其中 leaves/trunk 被 #autumn 图层覆盖)
 ```
 
 > [!TIP]
