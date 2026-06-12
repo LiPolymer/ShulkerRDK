@@ -262,7 +262,7 @@ static class Program {
                 // todo:正式修补这个问题 引发原因未知
                 // 这是临时处理
                 if (Path.GetFileName(file) == "ShulkerRDK.Modrinth.dll") {
-                    NugetHelper.DependencyVerify("Modrinth.Net/3.5.1");
+                    NugetHelper.DependencyVerify("Modrinth.Net/3.8.0");
                 }
                 IShulkerExtension iExtension = GetIExtension(LoadAssembly(file));
                 RegisterExtension(context, iExtension);
