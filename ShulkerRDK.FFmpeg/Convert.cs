@@ -1,6 +1,5 @@
 ﻿using System.Text.RegularExpressions;
 using FFMpegCore;
-using FFMpegCore.Enums;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.FFmpeg;
