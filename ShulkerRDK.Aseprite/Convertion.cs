@@ -55,12 +55,24 @@ public static class Convertion {
             ct?.WriteLine("&c无效的路径",Terminal.MessageType.Error);
         }
     }
+
+    static string FileNameDecorator(string basic,string tag) {
+        string prefix = "";
+        string suffix;
+        if (!tag.Contains('*')) suffix = tag;
+        else {
+            int starIndex = tag.IndexOf('*');
+            prefix = tag[..starIndex];
+            suffix = tag[(starIndex + 1)..];
+        }
+        return $"{prefix}{basic}{suffix}";
+    }
     
     static void Exporter(AsepriteFile aseFile, string dest) {
         Dictionary<string,Sprite> spd = TaggedProcessor(aseFile);
         foreach (KeyValuePair<string,Sprite> spi in spd) {
             Texture texture = spi.Value.Texture;
-            PngWriter.SaveTo(Path.Combine(dest,$"{aseFile.Name}{spi.Key}.png"),texture.Size.Width,texture.Size.Height,texture.Pixels.ToArray());
+            PngWriter.SaveTo(Path.Combine(dest,$"{FileNameDecorator(aseFile.Name,spi.Key)}.png"),texture.Size.Width,texture.Size.Height,texture.Pixels.ToArray());
         }
     }
 
@@ -72,7 +84,6 @@ public static class Convertion {
         bool isBaseDisabled = false;
         foreach (AsepriteLayer layer in aseFile.Layers) {
             if ((!layer.IsVisible) & (!layer.Name.Contains('#'))) continue;
-            //if (layer.IsBackgroundLayer) continue;
             if (layer is AsepriteTilemapLayer) continue;
             if (layer.Name == "#disableBase") {
                 isBaseDisabled = true;
