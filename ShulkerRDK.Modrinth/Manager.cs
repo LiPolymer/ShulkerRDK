@@ -165,7 +165,7 @@ public class Manager {
         MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(input))!;
         if (File.Exists(output) & !overwrite) return;
         ct?.WriteLine($"&7正在补全 &8V_&7{mrf.VersionId}&8[{mrf.Sha1}]",Terminal.MessageType.Debug);
-        if (!File.Exists(Path.Combine(LocalPath,mrf.Sha1))) {
+        if (!(File.Exists(Path.Combine(LocalPath,mrf.Sha1)) && Tools.GetSha1(Path.Combine(LocalPath,mrf.Sha1)) == mrf.Sha1)) {
             Task<Version> getTask = _client.Version.GetAsync(mrf.VersionId);
             getTask.Wait();
             foreach (global::Modrinth.Models.File file in getTask.Result.Files) {
