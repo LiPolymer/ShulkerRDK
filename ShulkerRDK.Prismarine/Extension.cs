@@ -18,10 +18,10 @@ public class Extension : ExtensionBase {
     public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
 
     public override string AsciiArt { get => """
-                                             &b    .    &7| &b      !!  
-                                             &b  .' '.  &7| &b     /^\ 
-                                             &b  |   |  &7| ___/___\\
-                                             &b  |_o_|  &7| &3Prismarine
+                                             &b┌──────┐┌──────┐┌──────┐┌───┐──┐┌──────┐
+                                             &b│      ││       └──────┐│      ││       
+                                             &b│──────┘│       │      ││      ││       
+                                             &b└       └       └──────┘└      ┘└      
                                              """; }
 
     public override void Init(ShulkerContext context) {
