@@ -43,7 +43,7 @@ static class Program {
         
         // 定位插件依赖于此处
         AppDomain.CurrentDomain.AssemblyResolve += (_, resolveEventArgs) => {
-            string assemblyPath = Path.Combine(Path.GetFullPath("./shulker/local/libs"), new AssemblyName(resolveEventArgs.Name).Name + ".dll");
+            string assemblyPath = Path.Combine(Path.GetFullPath(StaticContext.Paths.LibsPath), new AssemblyName(resolveEventArgs.Name).Name + ".dll");
             return File.Exists(assemblyPath) ? Assembly.LoadFile(assemblyPath) : null;
         };
 
@@ -231,18 +231,30 @@ static class Program {
         }
         throw new Exception("未能作为扩展加载程序集");
     }
-    static void LoadExtensions(ShulkerContext context,string? epp = null, string extensionsPath = "./shulker/extensions") {
+    static void LoadExtensions(ShulkerContext context,string? epp = null,string? extensionsPath = null) {
+        extensionsPath ??= StaticContext.Paths.ExtensionsPath;
         if (!Directory.Exists(extensionsPath)) {
             Directory.CreateDirectory(extensionsPath);
         }
-        string[] files = Directory.GetFiles(extensionsPath);
-        
-        List<string> fileList = files.ToList();
+
+        List<string> fileList = [
+            .. Directory.GetDirectories(extensionsPath)
+                .Select(ResolveExtensionEntry)
+                .OfType<string>()
+        ];
+
+        string legacyExtensionsPath = StaticContext.Paths.LegacyExtensionsPath;
+        if (Directory.Exists(legacyExtensionsPath)) {
+            fileList.AddRange(Directory.GetFiles(legacyExtensionsPath,"*.dll").Select(f => {
+                Terminal.WriteLine("&l&bExtension",$"&7{Path.GetFileName(f)} 采用了过时的载入方式");
+                return f;
+            }));
+        }
 
         if (epp != null) {
             fileList.Add(epp);
         }
-        
+
         #if DEBUG
         fileList.Add(@"..\..\..\..\TestExtension\bin\Debug\net8.0\TestExtension.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.ResourceMagick\bin\Debug\net8.0\ShulkerRDK.ResourceMagick.dll");
@@ -252,21 +264,14 @@ static class Program {
         fileList.Add(@"..\..\..\..\ShulkerRDK.FFmpeg\bin\Debug\net8.0\ShulkerRDK.FFmpeg.dll");
         fileList.Add(@"..\..\..\..\ShulkerRDK.Prismarine\bin\Debug\net10.0\ShulkerRDK.Prismarine.dll");
         #endif
-        
-        files = fileList.ToArray();
-        
-        foreach (string file in files) {
+
+        foreach (string file in fileList) {
             try {
                 if (!file.EndsWith(".dll")) continue;
                 Terminal.WriteLine("&l&bExtension",$"&7正在载入&8[&7{Path.GetFileName(file)}&8]");
-                // todo:正式修补这个问题 引发原因未知
-                // 这是临时处理
-                if (Path.GetFileName(file) == "ShulkerRDK.Modrinth.dll") {
-                    NugetHelper.DependencyVerify("Modrinth.Net/3.8.0");
-                }
                 IShulkerExtension iExtension = GetIExtension(LoadAssembly(file));
                 RegisterExtension(context, iExtension);
-                
+
                 Terminal.WriteLine("&l&bExtension",$"&8[&7{iExtension.Name}&8@{iExtension.Version}]&a载入完成!");
             }
             catch (Exception e) {
@@ -274,6 +279,16 @@ static class Program {
                 //Terminal.WriteLine("&l&bExtension",e.Message,Terminal.MessageType.Error);
             }
         }
+    }
+    static string? ResolveExtensionEntry(string directory) {
+        string directoryName = Path.GetFileName(directory);
+        string preferred = Path.Combine(directory,directoryName + ".dll");
+        if (File.Exists(preferred)) return preferred;
+        string[] candidates = Directory.GetFiles(directory,"*.dll");
+        if (candidates.Length == 1) return candidates[0];
+        Terminal.WriteLine("&l&bExtension",
+                           $"&c无法确定插件包入口程序集&8[&7{directoryName}&8]&c,请将依赖移入子文件夹,或将插件本体命名为&8[&7{directoryName}.dll&8]",Terminal.MessageType.Warn);
+        return null;
     }
     static void RegisterExtension(ShulkerContext context,IShulkerExtension extension) {
         context.Extensions.Add(extension.Id,extension);

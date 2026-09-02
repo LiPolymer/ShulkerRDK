@@ -288,9 +288,9 @@ public static class NugetHelper {
             bool passed = true;
             foreach (string checkpoint in checkFiles) {
                 if (checkpoint.Contains('|')) {
-                    bool subPassed = checkpoint.Split("|").Any(subPoint => File.Exists(Path.Combine("./shulker/local/libs",subPoint)));
+                    bool subPassed = checkpoint.Split("|").Any(subPoint => File.Exists(Path.Combine(StaticContext.Paths.LibsPath,subPoint)));
                     passed = subPassed;
-                } else if (!File.Exists(Path.Combine("./shulker/local/libs",checkpoint))) {
+                } else if (!File.Exists(Path.Combine(StaticContext.Paths.LibsPath,checkpoint))) {
                     passed = false;
                 }
             }
@@ -299,8 +299,8 @@ public static class NugetHelper {
                     return;
                 }
             }
-            if (!Directory.Exists("./shulker/local/libs")) {
-                Directory.CreateDirectory("./shulker/local/libs");
+            if (!Directory.Exists(StaticContext.Paths.LibsPath)) {
+                Directory.CreateDirectory(StaticContext.Paths.LibsPath);
             }
             ChainedTerminal logger = new ChainedTerminal("&9Nuget");
             logger.WriteLine($"&7正在获取包&8[&7{packageIdentifier}&8]");
@@ -315,7 +315,7 @@ public static class NugetHelper {
             ZipFile.ExtractToDirectory(pkgCache,extCache);
             string[] files = Directory.GetFiles(Path.Combine(extCache,$"lib/{libTarget}/"),"*.dll",SearchOption.TopDirectoryOnly);
             foreach (string file in files) {
-                File.Copy(file,Path.Combine("./shulker/local/libs",Path.GetFileName(file)),true);
+                File.Copy(file,Path.Combine(StaticContext.Paths.LibsPath,Path.GetFileName(file)),true);
             }
             if (extractRuntime) {
                 if (Directory.Exists(Path.Combine(extCache,$"runtimes/"))) {
@@ -342,7 +342,7 @@ public static class NugetHelper {
                     string[] runtimes = Directory.GetFiles(Path.Combine(extCache,$"runtimes/{platform}-{arch}/native/"),"*.dll*",
                                                            SearchOption.TopDirectoryOnly);
                     foreach (string runtime in runtimes) {
-                        File.Copy(runtime,Path.Combine("./shulker/local/libs",Path.GetFileName(runtime)),true);
+                        File.Copy(runtime,Path.Combine(StaticContext.Paths.LibsPath,Path.GetFileName(runtime)),true);
                     }
                 }
             }
@@ -362,14 +362,14 @@ public static class NugetHelper {
         }
 
         public static void Overwrite(string identifier) {
-            string path = Path.Combine("./shulker/local/libs",identifier.Split('/')[0] + ".depMeta.json");
+            string path = Path.Combine(StaticContext.Paths.LibsPath,identifier.Split('/')[0] + ".depMeta.json");
             Tools.WriteAllText(path,JsonSerializer.Serialize(new DependencyMetadata {
                 Version = identifier.Split('/')[1]
             },Tools.JsonSerializerOptions));
         }
         
         public static DependencyMetadata Get(string identifier) {
-            string path = Path.Combine("./shulker/local/libs",identifier.Split('/')[0] + ".depMeta.json");
+            string path = Path.Combine(StaticContext.Paths.LibsPath,identifier.Split('/')[0] + ".depMeta.json");
             if (!File.Exists(path)) {
                 Tools.WriteAllText(path,JsonSerializer.Serialize(new DependencyMetadata {
                     Version = identifier.Split('/')[1]
@@ -381,7 +381,7 @@ public static class NugetHelper {
         }
 
         public void Write() {
-            string path = Path.Combine("./shulker/local/libs",Name + ".dll.json");
+            string path = Path.Combine(StaticContext.Paths.LibsPath,Name + ".dll.json");
             Tools.WriteAllText(path,JsonSerializer.Serialize(this,Tools.JsonSerializerOptions));
         }
 
