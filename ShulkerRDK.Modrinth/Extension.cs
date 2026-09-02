@@ -5,10 +5,6 @@ namespace ShulkerRDK.Modrinth;
 // ReSharper disable once UnusedType.Global
 public class Extension : ExtensionBase {
     public Extension() {
-        #if !DEBUG
-        //NugetHelper.DependencyVerify("Modrinth.Net/3.8.0");
-        #endif
-        
         Commands.Add("mrp",Manager.Command);
         LevitateMethods.Add("mrp",Manager.Method);
     }

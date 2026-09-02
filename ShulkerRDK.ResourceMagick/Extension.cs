@@ -7,15 +7,6 @@ namespace ShulkerRDK.ResourceMagick;
 // ReSharper disable once UnusedType.Global
 public class Extension : ExtensionBase {
     public Extension() {
-        #if !DEBUG
-        NugetHelper.DependencyVerify("Magick.NET.Core/14.7.0");
-        NugetHelper.DependencyVerify("Magick.NET-Q16-AnyCPU/14.7.0","net8.0",true,[
-            "Magick.NET-Q16-AnyCPU.dll",
-            "Magick.Native-Q16-x64.dll|Magick.Native-Q16-x86.dll|Magick.Native-Q16-arm64.dll" +
-            "|Magick.Native-Q16-x64.dll.so|Magick.Native-Q16-arm64.dll.so" +
-            "|Magick.Native-Q16-x64.dll.dylib|Magick.Native-Q16-arm64.dll.dylib"
-        ]);
-        #endif
         Commands.Add("png2psd",Formatter.Command);
         
         LevitateMethods.Add("psdcvt",PsdConverter.Method);

@@ -4,10 +4,6 @@ namespace ShulkerRDK.Aseprite;
 
 public class Extension : ExtensionBase {
     public Extension() {
-        #if !DEBUG
-        NugetHelper.DependencyVerify("AsepriteDotNet/1.9.0");
-        #endif
-        
         Commands.Add("ase", Convertion.Command);
         LevitateMethods.Add("ase",Convertion.Method);
     }

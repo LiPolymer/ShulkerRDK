@@ -21,6 +21,7 @@ public static class ExtensionInstaller {
         if (config.Extensions.Count > 0) {
             Terminal.WriteLine("&l&bExtension","&7正在解析声明式扩展...");
         }
+        PruneUndeclared(config);
         foreach (string identifier in config.Extensions) {
             try {
                 EnsureOne(identifier,progressEnabled);
@@ -29,7 +30,6 @@ public static class ExtensionInstaller {
                 Tools.DisplayException(e,new ChainedTerminal("&l&bExtension"),Terminal.MessageType.Error);
             }
         }
-        PruneUndeclared(config);
     }
 
     static void EnsureOne(string identifier,bool progressEnabled) {
