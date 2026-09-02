@@ -45,7 +45,8 @@ public class Manager {
                 destroySource = true;
             }
         }
-        TransitionLayer(args[1],args[2],to,destroySource,ct);
+        bool overwriteFileName = Tools.CheckParamLength(args,4) && args[4] == "-n";
+        TransitionLayer(args[1],args[2],to,destroySource,overwriteFileName,ct);
         return null;
     }
 
@@ -70,18 +71,19 @@ public class Manager {
                 string from = Tools.CheckParamLength(args,2) ? args[2] : shulkerContext.ProjectConfig!.RootPath;
                 bool isOutMissing = !Tools.CheckParamLength(args,3);
                 string to = !isOutMissing ? args[3] : from;
-                TransitionLayer(args[1],from,to,isOutMissing,ct);
+                bool overwriteFileName = Tools.CheckParamLength(args,4) && args[4] == "-n";
+                TransitionLayer(args[1],from,to,isOutMissing || overwriteFileName,overwriteFileName,ct);
                 break;
         }
     }
 
-    static void TransitionLayer(string act,string from,string to,bool destroySource,IChainedLikeTerminal ct) {
+    static void TransitionLayer(string act,string from,string to,bool destroySource,bool overwriteFileName = false,IChainedLikeTerminal? ct = null) {
         switch (act) {
             case "r" or "restore":
                 Instance.Restore(from,to,ct,destroySource);
                 break;
             case "s" or "serialize":
-                Instance.Serialize(from,to,ct,destroySource);
+                Instance.Serialize(from,to,ct,destroySource,overwriteFileName);
                 break;
             case "e" or "export":
                 Instance.Indexer("./shulker/mrpack.template.json",from,to,ct,destroySource);
@@ -106,7 +108,7 @@ public class Manager {
         if (Directory.Exists(LocalPath)) Directory.Delete(LocalPath,true);
         ct?.WriteLine("&7完成!");
     }
-    void Serialize(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false) {
+    void Serialize(string input,string output,IChainedLikeTerminal? ct = null,bool destroySource = false,bool overwriteFileName = false) {
         string[] files = Directory.GetFiles(input,"*",SearchOption.AllDirectories);
         ct?.WriteLine($"&7正在编入&8[&7{input}&8]");
         Dictionary<string,List<string>> reverseMap = [];
@@ -130,9 +132,15 @@ public class Manager {
                 string relativePath = Path.GetRelativePath(input,target);
                 string destPath = Path.Combine(output,relativePath);
                 destPath = $"{destPath}.mrf";
+                if (overwriteFileName) {
+                    string dir = Path.GetDirectoryName(destPath)!;
+                    destPath = Path.Combine(dir,GetMrfFileName(GetPrimaryFile(rawResult.Value)));
+                }
+                ct?.WriteLine($"&8{destPath}", Terminal.MessageType.Debug);
                 Tools.WriteAllText(destPath,JsonSerializer.Serialize(new MrHostedFile {
                     Sha1 = rawResult.Key,
-                    VersionId = rawResult.Value.Id
+                    VersionId = rawResult.Value.Id,
+                    FileName = GetModrinthFileName(GetPrimaryFile(rawResult.Value))
                 },Tools.JsonSerializerOptions));
                 ManagedFileImport(target,rawResult.Key);
                 if (destroySource) File.Delete(target);
@@ -308,11 +316,15 @@ public class Manager {
         };
     }
 
-    static string GetMrfFileName(global::Modrinth.Models.File file) {
+    static string GetModrinthFileName(global::Modrinth.Models.File file) {
         string raw = !string.IsNullOrEmpty(file.FileName)
             ? file.FileName
             : Path.GetFileName(new Uri(file.Url).AbsolutePath);
-        return $"{System.Net.WebUtility.UrlDecode(raw)}.mrf";
+        return System.Net.WebUtility.UrlDecode(raw);
+    }
+
+    static string GetMrfFileName(global::Modrinth.Models.File file) {
+        return $"{GetModrinthFileName(file)}.mrf";
     }
 
     static (List<string> loaders, List<string> gameVersions) LoadMrpackDependencies() {
@@ -375,7 +387,7 @@ public class Manager {
 
         global::Modrinth.Models.File file = GetPrimaryFile(version);
         string cachePath = Path.Combine(LocalPath,file.Hashes.Sha1);
-        string displayName = !string.IsNullOrEmpty(file.FileName) ? System.Net.WebUtility.UrlDecode(file.FileName) : file.Hashes.Sha1;
+        string displayName = GetModrinthFileName(file);
         ct.WriteLine($"&7正在下载 &8{displayName}");
         FileDownloader.DownloadFile(file.Url,cachePath);
 
@@ -383,8 +395,9 @@ public class Manager {
         Tools.WriteAllText(mrfPath,JsonSerializer.Serialize(new MrHostedFile {
             Sha1 = file.Hashes.Sha1,
             VersionId = version.Id,
+            ServerSide = project.ServerSide,
             ClientSide = project.ClientSide,
-            ServerSide = project.ServerSide
+            FileName = GetModrinthFileName(file)
         },Tools.JsonSerializerOptions));
         ct.WriteLine($"&a已添加 &7{project.Title} &8@&7{version.VersionNumber} &8-> &7{mrfPath}");
     }
@@ -418,16 +431,16 @@ public class Manager {
         ct.WriteLine($"&a完成! &7成功 &8[{success}] &7个" + (failed > 0 ? $", &c失败 &8[{failed}] &7个" : ""));
     }
 
-    void Update(string directory,IChainedLikeTerminal ct) {
-        ct.WriteLine("&aModrinth &7更新资源");
+    void Update(string directory,IChainedLikeTerminal? ct) {
+        ct?.WriteLine("&aModrinth &7更新资源");
         string[] mrfFiles = Directory.Exists(directory)
             ? Directory.GetFiles(directory,"*.mrf",SearchOption.AllDirectories)
             : [];
         if (mrfFiles.Length == 0) {
-            ct.WriteLine("&7未找到.mrf文件");
+            ct?.WriteLine("&7未找到.mrf文件");
             return;
         }
-        ct.WriteLine($"&7找到 &8[{mrfFiles.Length}] &7个资源文件");
+        ct?.WriteLine($"&7找到 &8[{mrfFiles.Length}] &7个资源文件");
 
         (List<string> loaders,List<string> gameVersions) = LoadMrpackDependencies();
 
@@ -445,14 +458,14 @@ public class Manager {
             hashTask.Wait();
             foreach (KeyValuePair<string,Version> kv in hashTask.Result) currentVersions[kv.Key] = kv.Value;
         } catch {
-            ct.WriteLine("&7哈希查询失败,尝试逐个查询...");
+            ct?.WriteLine("&7哈希查询失败,尝试逐个查询...");
             foreach ((string path, MrHostedFile mrf) entry in entries) {
                 try {
                     Task<Version> verTask = _client.Version.GetAsync(entry.mrf.VersionId);
                     verTask.Wait();
                     currentVersions[entry.mrf.Sha1] = verTask.Result;
                 } catch (Exception e) {
-                    ct.WriteLine($"&7获取版本时出现异常 &8[&7{e}&8] {entry.path}");
+                    ct?.WriteLine($"&7获取版本时出现异常 &8[&7{e}&8] {entry.path}");
                 }
             }
         }
@@ -473,7 +486,7 @@ public class Manager {
                 listTask.Wait();
                 projectLatestVersions[projectId] = listTask.Result;
             } catch (Exception e) {
-                ct.WriteLine($"&7无法获取项目 &8{projectId} &7的版本列表 [{e.Message}]");
+                ct?.WriteLine($"&7无法获取项目 &8{projectId} &7的版本列表 [{e.Message}]");
             }
         }
 
@@ -492,19 +505,43 @@ public class Manager {
 
             global::Modrinth.Models.File newFile = GetPrimaryFile(latest);
             string cachePath = Path.Combine(LocalPath,newFile.Hashes.Sha1);
-            ct.WriteLine($"&7正在更新 &8[&7{currentVer.Name}&8] &c{currentVer.VersionNumber} &7-> &a{latest.VersionNumber}");
+            ct?.WriteLine($"&7正在更新 &8[&7{currentVer.Name}&8] &c{currentVer.VersionNumber} &7-> &a{latest.VersionNumber}");
             FileDownloader.DownloadFile(newFile.Url,cachePath);
 
-            Tools.WriteAllText(entry.path,JsonSerializer.Serialize(new MrHostedFile {
+            string newFileName = GetModrinthFileName(newFile);
+            string targetPath = entry.path;
+            string oldFileName = Path.GetFileNameWithoutExtension(entry.path);
+            if (entry.mrf.FileName == null) {
+                // 旧版mrf未存储文件名, 视为与当前文件名一致
+                targetPath = Path.Combine(Path.GetDirectoryName(entry.path)!,$"{newFileName}.mrf");
+                if (File.Exists(targetPath)) {
+                    ct?.WriteLine($"&e目标文件已存在, 保持当前文件名 &8{oldFileName}.mrf");
+                    targetPath = entry.path;
+                }
+            } else if (oldFileName == entry.mrf.FileName) {
+                if (oldFileName != newFileName) {
+                    string newPath = Path.Combine(Path.GetDirectoryName(entry.path)!,$"{newFileName}.mrf");
+                    if (File.Exists(newPath)) {
+                        ct?.WriteLine($"&e目标文件已存在, 保持当前文件名 &8{oldFileName}.mrf");
+                    } else {
+                        targetPath = newPath;
+                    }
+                }
+            } else {
+                ct?.WriteLine($"&e文件名 &8{oldFileName}.mrf &7与其存储的文件名 &8{entry.mrf.FileName}.mrf &7不一致, 已保持当前文件名");
+            }
+            Tools.WriteAllText(targetPath,JsonSerializer.Serialize(new MrHostedFile {
                 Sha1 = newFile.Hashes.Sha1,
-                VersionId = latest.Id
+                VersionId = latest.Id,
+                FileName = newFileName
             },Tools.JsonSerializerOptions));
+            if (targetPath != entry.path) File.Delete(entry.path);
             updated++;
         }
-        ct.WriteLine($"&a完成! &7已更新 &8[{updated}] &7个资源" + (skipped > 0 ? $", &e跳过 &8[{skipped}] &7个已锁定" : ""));
+        ct?.WriteLine($"&a完成! &7已更新 &8[{updated}] &7个资源" + (skipped > 0 ? $", &e跳过 &8[{skipped}] &7个已锁定" : ""));
     }
 
-    void SetLock(string input,bool lockState,IChainedLikeTerminal ct) {
+    void SetLock(string input,bool lockState,IChainedLikeTerminal? ct) {
         string[] mrfFiles = Directory.Exists(".")
             ? Directory.GetFiles(".","*.mrf",SearchOption.AllDirectories)
             : [];
@@ -517,14 +554,14 @@ public class Manager {
             MrHostedFile mrf = JsonSerializer.Deserialize<MrHostedFile>(File.ReadAllText(file))!;
             mrf.Locked = lockState;
             Tools.WriteAllText(file,JsonSerializer.Serialize(mrf,Tools.JsonSerializerOptions));
-            ct.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
+            ct?.WriteLine($"&7{(lockState ? "已锁定" : "已解锁")} &8{file}");
             count++;
         }
         if (count > 0) {
-            ct.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
+            ct?.WriteLine($"&a完成! &7{(lockState ? "已锁定" : "已解锁")} &8[{count}] &7个资源");
             return;
         }
-        ct.WriteLine($"&7文件名无匹配");
+        ct?.WriteLine($"&7文件名无匹配");
         /*
         // 文件名无匹配,尝试按项目ID/slug匹配
         (string slugOrId,_) = ParseModrinthInput(input);

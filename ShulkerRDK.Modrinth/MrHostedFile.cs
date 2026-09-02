@@ -14,4 +14,6 @@ public class MrHostedFile {
     public Side? ClientSide { get; set; }
 
     public bool Locked { get; set; }
+
+    public string? FileName { get; set; }
 }
