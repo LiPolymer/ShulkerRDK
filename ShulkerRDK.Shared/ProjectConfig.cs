@@ -45,6 +45,8 @@ public class ProjectConfig {
 
     public Dictionary<string,string> DefaultEnvVars { get; init; } = [];
 
+    public List<string> Extensions { get; set; } = [];
+
     public void Save() {
         Tools.WriteAllText(StaticContext.Paths.ProjectConfig,JsonSerializer.Serialize(this,Tools.JsonSerializerOptions));
     }

@@ -40,6 +40,7 @@ static class Program {
         Terminal.WriteLine("&l&3Core","&7正在载入核心扩展");
         RegisterExtension(Context, new CoreExtension.Extension());
         Terminal.WriteLine("&l&bExtension","&7开始加载外置扩展");
+        ExtensionInstaller.EnsureInstalled(Context.ProjectConfig,args.Length == 0);
         
         // 定位插件依赖于此处
         AppDomain.CurrentDomain.AssemblyResolve += (_, resolveEventArgs) => {
