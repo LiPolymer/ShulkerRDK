@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -u
+
+RELEASE_SOURCE_ID='gh:LiPolymer/ShulkerRDK@B0.16'
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
+BIN_DIR="$SCRIPT_DIR/shulker/local/bin"
+BIN_PATH="$BIN_DIR/srdk"
+MARKER_PATH="$BIN_DIR/srdk.version"
+
+OS_NAME="$(uname -s)"
+case "$OS_NAME" in
+    Linux*) OS_NAME='linux' ;;
+    Darwin*) OS_NAME='macos' ;;
+    *) echo "[srdk] 不支持的系统 [$OS_NAME]" >&2; exit 1 ;;
+esac
+
+MACHINE="$(uname -m)"
+case "$MACHINE" in
+    arm64|aarch64) ARCH='arm64' ;;
+    *) ARCH='x64' ;;
+esac
+
+urlencode() {
+    local s="$1" out='' c i h
+    for ((i = 0; i < ${#s}; i++)); do
+        c="${s:i:1}"
+        case "$c" in
+            [A-Za-z0-9.~_-]) out+="$c" ;;
+            *) printf -v h '%%%02X' "'$c"; out+="$h" ;;
+        esac
+    done
+    printf '%s' "$out"
+}
+
+fetch_json() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL -A 'ShulkerRDK' -H 'Accept: application/json' "$1"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO- --user-agent='ShulkerRDK' --header='Accept: application/json' "$1"
+    else
+        echo "[srdk] 获取 release 信息需要 curl 或 wget" >&2
+        return 1
+    fi
+}
+
+parse_assets() {
+    local json
+    json="$(fetch_json "$1")" || return 1
+    if command -v jq >/dev/null 2>&1; then
+        if [ "$2" = 'gh' ]; then
+            printf '%s' "$json" | jq -r '.assets[]? | [.name, .browser_download_url, ((.digest // "") | sub("^sha256:";""))] | @tsv'
+        else
+            printf '%s' "$json" | jq -r '.assets.links[]? | [.name, (.direct_asset_url // .url // "")] | @tsv'
+        fi
+    elif command -v python3 >/dev/null 2>&1; then
+        if [ "$2" = 'gh' ]; then
+            printf '%s' "$json" | python3 -c '
+import json,sys
+try:
+    d=json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+for a in (d.get("assets") or []):
+    n=a.get("name") or ""
+    u=a.get("browser_download_url") or ""
+    g=a.get("digest")
+    g=g[7:] if isinstance(g,str) and g.startswith("sha256:") and len(g)>7 else ""
+    print(n+"\t"+u+"\t"+g)
+'
+        else
+            printf '%s' "$json" | python3 -c '
+import json,sys
+try:
+    d=json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+for l in ((d.get("assets") or {}).get("links") or []):
+    n=l.get("name") or ""
+    u=l.get("direct_asset_url") or l.get("url") or ""
+    print(n+"\t"+u+"\t")
+'
+        fi
+    else
+        echo "[srdk] 解析 release 信息需要 jq 或 python3" >&2
+        return 1
+    fi
+}
+
+install_srdk() {
+    echo "[srdk] 正在从 [$RELEASE_SOURCE_ID] 获取 srdk..."
+
+    local api_url
+    case "$SRC_PLATFORM" in
+        gh) api_url="https://api.github.com/repos/$REPO/releases/tags/$(urlencode "$TAG")" ;;
+        gl) api_url="https://gitlab.com/api/v4/projects/$(urlencode "$REPO")/releases/$(urlencode "$TAG")" ;;
+        *) echo "[srdk] 未知的扩展源平台[$SRC_PLATFORM]" >&2; exit 1 ;;
+    esac
+
+    local assets
+    assets="$(parse_assets "$api_url" "$SRC_PLATFORM")" || {
+        echo "[srdk] 无法获取 release 信息" >&2
+        exit 1
+    }
+
+    local candidates
+    case "$OS_NAME-$ARCH" in
+        linux-x64) candidates=('srdk_linux' 'srdk') ;;
+        linux-arm64) candidates=('srdk_linux_arm64') ;;
+        macos-x64) candidates=('srdk_mac') ;;
+        macos-arm64) candidates=('srdk_mac_arm64' 'srdk_mac') ;;
+    esac
+
+    local selected_url='' selected_sha='' cand name url sha
+    for cand in "${candidates[@]}"; do
+        while IFS=$'\t' read -r name url sha; do
+            [ -z "$name" ] && continue
+            if [ "$name" = "$cand" ]; then
+                selected_url="$url"
+                selected_sha="$sha"
+                break 2
+            fi
+        done <<< "$assets"
+    done
+
+    if [ -z "$selected_url" ]; then
+        local available
+        available="$(printf '%s\n' "$assets" | cut -f1 | sed '/^$/d' | tr '\n' ' ')"
+        echo "[srdk] release [$RELEASE_SOURCE_ID] 中未找到资产 [$(printf '%s ' "${candidates[@]}")] , 可用资产: ${available:-无}" >&2
+        exit 1
+    fi
+
+    mkdir -p "$BIN_DIR" || { echo "[srdk] 无法创建目录 $BIN_DIR" >&2; exit 1; }
+    local tmp="$BIN_PATH.download"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL -A 'ShulkerRDK' -o "$tmp" "$selected_url" || { rm -f "$tmp"; echo "[srdk] 下载失败" >&2; exit 1; }
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$tmp" --user-agent='ShulkerRDK' "$selected_url" || { rm -f "$tmp"; echo "[srdk] 下载失败" >&2; exit 1; }
+    else
+        echo "[srdk] 下载需要 curl 或 wget" >&2
+        exit 1
+    fi
+
+    if [ -n "$selected_sha" ]; then
+        local actual expected
+        if command -v sha256sum >/dev/null 2>&1; then
+            actual="$(sha256sum "$tmp" | cut -d' ' -f1)"
+        else
+            actual="$(shasum -a 256 "$tmp" | cut -d' ' -f1)"
+        fi
+        expected="$(printf '%s' "$selected_sha" | tr 'A-Z' 'a-z')"
+        if [ "$actual" != "$expected" ]; then
+            rm -f "$tmp"
+            echo "[srdk] SHA256 校验失败 (期望 $selected_sha , 实际 $actual)" >&2
+            exit 1
+        fi
+    fi
+
+    mv -f "$tmp" "$BIN_PATH" || { rm -f "$tmp"; echo "[srdk] 安装失败" >&2; exit 1; }
+    chmod +x "$BIN_PATH"
+    printf '%s\n' "$RELEASE_SOURCE_ID" > "$MARKER_PATH"
+    echo "[srdk] 已安装 $BIN_PATH"
+}
+
+SRC_PLATFORM=''
+REPO=''
+TAG=''
+if [[ "$RELEASE_SOURCE_ID" =~ ^([^:]+):([^@]+)@(.+)$ ]]; then
+    SRC_PLATFORM="${BASH_REMATCH[1]}"
+    REPO="${BASH_REMATCH[2]}"
+    TAG="${BASH_REMATCH[3]}"
+else
+    echo "[srdk] 无效的版本源 identifier [$RELEASE_SOURCE_ID] , 约定为 platform:user/repo@tag" >&2
+    exit 1
+fi
+
+needs_install=1
+if [ -f "$BIN_PATH" ]; then
+    needs_install=0
+    if [ -f "$MARKER_PATH" ]; then
+        installed="$(tr -d ' \t\r\n' < "$MARKER_PATH")"
+        if [ -n "$installed" ] && [ "$installed" != "$RELEASE_SOURCE_ID" ]; then
+            needs_install=1
+        fi
+    fi
+fi
+if [ "$needs_install" -eq 1 ]; then
+    install_srdk
+fi
+
+cd "$SCRIPT_DIR" || exit 1
+exec "$BIN_PATH" "$@"

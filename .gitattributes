@@ -1,3 +1,4 @@
 *.ts linguist-detectable=false
 *.mts linguist-detectable=false
 *.css linguist-detectable=false
+scripts/srdk.sh text eol=lf
