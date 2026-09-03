@@ -11,7 +11,7 @@ public class Extension : ExtensionBase {
     public override string Name { get => "ShulkerFFmpeg"; }
     public override string Description { get => "FFmpeg集成"; }
     public override string Author { get => "LiPolymer"; }
-    public override string Version { get => "Dev"; }
+    public override string Version { get => "B0.20"; }
     public override string? AsciiArt { get => """
                                               &a    ____________                          
                                               &a   / ____/ ____/___ ___  ____  ___  ____ _

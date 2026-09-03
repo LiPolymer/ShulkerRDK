@@ -13,7 +13,7 @@ public class Extension : ExtensionBase {
     public override string Name { get => "Prismarine"; }
     public override string Description { get => "next generation modpack developing backend"; }
     public override string Author { get => "LiPolymer"; }
-    public override string Version { get => "Dev.Inf"; }
+    public override string Version { get => "B0.20"; }
     public override string Link { get => "https://github.com/LiPolymer/ShulkerRDK"; }
     public override string Donating { get => "https://afdian.tv/a/lipolymer"; }
 
