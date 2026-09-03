@@ -11,6 +11,7 @@ using TridentCore.Core.Lifetimes;
 using TridentCore.Core.Services;
 using TridentCore.Core.Services.Instances;
 using TridentCore.Core.Utilities;
+using ZiggyCreatures.Caching.Fusion;
 
 namespace ShulkerRDK.Prismarine.Services;
 
@@ -25,8 +26,6 @@ public static class TridentServices {
     public static void Initialize(string? curseForgeApiKey = null) {
         if (_provider != null) throw new InvalidOperationException("Already initialized");
 
-        string dir = PathDef.Default.Home;
-        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         if (!Directory.Exists(PathDef.Default.InstanceDirectory)) Directory.CreateDirectory(PathDef.Default.InstanceDirectory);
         if (!Directory.Exists(PathDef.Default.CacheDirectory)) Directory.CreateDirectory(PathDef.Default.CacheDirectory);
 
@@ -39,6 +38,7 @@ public static class TridentServices {
 
         services.AddMemoryCache();
         services.AddDistributedMemoryCache();
+        services.AddFusionCache().WithDefaultEntryOptions(options => options.Duration = TimeSpan.FromDays(7));
         services.AddHttpClient();
 
         services.AddPrismLauncher()
@@ -47,6 +47,7 @@ public static class TridentServices {
             .AddXboxLive()
             .AddMinecraft()
             .AddMclogs()
+            .AddRepositoryInfrastructure()
             .AddLifetimeRuntime();
 
         services.AddTransient<IProfileImporter,TridentImporter>();
@@ -64,12 +65,13 @@ public static class TridentServices {
         services.AddSingleton<IRepositoryProviderAccessor>(_ => new PrismarineRepoProvider(curseForgeApiKey));
 
         // Deploy pipeline stages
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.CheckArtifactStage>();
+        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.LoadLockStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.InstallVanillaStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.ProcessLoaderStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.ResolvePackageStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.BuildArtifactStage>();
+        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.SyncPackagesStage>();
+        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.FlattenPackagesStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.EnsureRuntimeStage>();
+        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.PersistLockStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.GenerateManifestStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.SolidifyManifestStage>();
         services.AddTransient<TridentCore.Core.Engines.Deploying.PackagePlanner>();

@@ -13,7 +13,7 @@ using TridentCore.Abstractions.Repositories.Resources;
 using TridentCore.Abstractions.Utilities;
 using TridentCore.Core.Services;
 using TridentCore.Core.Utilities;
-using TridentCore.Purl;
+using TridentCore.Pref;
 
 namespace ShulkerRDK.Prismarine.Commands;
 
@@ -159,7 +159,7 @@ public static class PfManager {
         foreach (Exhibit exhibit in results) {
             ct.WriteLine($"  &b{exhibit.Name} &8[&7{exhibit.Kind}&8] &8by &7{exhibit.Author}");
             ct.WriteLine($"    &7{exhibit.Summary}");
-            ct.WriteLine($"    &8purl: &7{PackageHelper.ToPurl(exhibit.Label,exhibit.Namespace,exhibit.Pid,null)}");
+            ct.WriteLine($"    &8purl: &7{PackageHelper.ToPref(exhibit.Label,exhibit.Namespace,exhibit.Pid,null)}");
         }
     }
 
@@ -187,8 +187,8 @@ public static class PfManager {
             try {
                 ct.WriteLine($"  &8[&7{Path.GetFileName(file)}&8]",Terminal.MessageType.Debug);
 
-                Package resolved = agent.IdentityAsync(file).GetAwaiter().GetResult();
-                string purl = PackageHelper.ToPurl(resolved);
+                Package resolved = agent.IdentifyAsync(file).GetAwaiter().GetResult();
+                string purl = PackageHelper.ToPref(resolved);
 
                 PrismarineFileMeta meta = new PrismarineFileMeta(resolved);
                 string destPath = $"{file}{Extension}";
@@ -240,16 +240,16 @@ public static class PfManager {
                 PrismarineFileInstance instance = PrismarineFileInstance.Load(file);
                 PrismarineFileMeta meta = instance.Meta;
 
-                if (!PackageHelper.TryParse(meta.Purl,out (string Label,string? Namespace,string Pid,string? Vid) pdi)) {
-                    ct.WriteLine($"&c无法解析 PURL&8[&7{meta.Purl}&8]",Terminal.MessageType.Error);
+                if (!PackageHelper.TryParse(meta.Pref,out PackageIdentifier parsedId)) {
+                    ct.WriteLine($"&c无法解析 PURL&8[&7{meta.Pref}&8]",Terminal.MessageType.Error);
                     failed++;
                     continue;
                 }
 
                 string relativePath = Path.GetRelativePath(input,file);
                 Filter filter = meta.Limiter ?? Filter.None;
-                PackageIdentifier id = new PackageIdentifier(pdi.Label,pdi.Namespace,pdi.Pid,
-                                                             pdi.Vid == "unresolved" ? null : pdi.Vid);
+                PackageIdentifier id = new PackageIdentifier(parsedId.Repository,parsedId.Namespace,parsedId.Identity,
+                                                             parsedId.Version == "unresolved" ? null : parsedId.Version);
                 items.Add((file,relativePath,id,filter));
             }
             catch (Exception ex) {
@@ -266,9 +266,9 @@ public static class PfManager {
         foreach (IGrouping<Filter,(string File,string RelativePath,PackageIdentifier Id,Filter Filter)> group in items.GroupBy(x => x.Filter)) {
             Filter filter = group.Key;
             List<PackageIdentifier> batch = group.Select(x => x.Id).ToList();
-            IReadOnlyList<(PackageIdentifier,Package)> results;
+            BatchResult<PackageIdentifier,Package> batchResult;
             try {
-                results = agent.ResolveBatchAsync(batch,filter).GetAwaiter().GetResult();
+                batchResult = agent.ResolveBatchAsync(batch,filter).GetAwaiter().GetResult();
             }
             catch (Exception ex) {
                 ct.WriteLine($"&c批量解析失败&8[&c{ex.Message}&8]",Terminal.MessageType.Error);
@@ -278,9 +278,11 @@ public static class PfManager {
                 failed += group.Count();
                 continue;
             }
-            Dictionary<PackageIdentifier,Package> resolvedMap = new Dictionary<PackageIdentifier,Package>();
-            foreach ((PackageIdentifier id,Package pkg) in results)
-                resolvedMap[id] = pkg;
+            foreach ((PackageIdentifier _,Exception ex) in batchResult.Failed) {
+                ct.WriteLine($"&c失败&8[&7{ex.Message}&8]",Terminal.MessageType.Error);
+                failed++;
+            }
+            Dictionary<PackageIdentifier,Package> resolvedMap = new Dictionary<PackageIdentifier,Package>(batchResult.Successful);
             foreach ((string file,string relativePath,PackageIdentifier id,Filter _) in group) {
                 if (!resolvedMap.TryGetValue(id,out Package? resolved)) {
                     ct.WriteLine($"&c未解析&8[&7{Path.GetFileName(file)}&8]",Terminal.MessageType.Error);
@@ -299,10 +301,10 @@ public static class PfManager {
                                                                            resolved.Label,resolved.Namespace,resolved.ProjectId,resolved.VersionId,
                                                                            extension);
 
-                    bool cached = FileHelper.VerifyModified(cachePath,null,resolved.Sha1);
+                    bool cached = FileHelper.VerifyModified(cachePath,null,resolved.Hash);
                     ct.WriteLine(cached
-                                     ? $"  &7缓存命中 &8[&b{resolved.FileName} &8→ &7{Path.GetFileName(destPath)}&8]"
-                                     : $"  &7下载 &8[&b{resolved.FileName} &8→ &7{Path.GetFileName(destPath)}&8]");
+                                     ? $"  &7缓存命中 &8[&b{resolved.FileName}&8]"
+                                     : $"  &7下载 &8[&b{resolved.FileName}&8]");
 
                     if (!cached) {
                         FileDownloader.DownloadFile(resolved.Download.ToString(),cachePath);
@@ -361,7 +363,7 @@ public static class PfManager {
                         keeped++;
                         continue;
                     }
-                    string newFileName = (meta.FileName ?? GetFileNameFromPurl(meta.Purl)[..^Extension.Length]) + Extension;
+                    string newFileName = (meta.FileName ?? GetFileNameFromPurl(meta.Pref)[..^Extension.Length]) + Extension;
                     string? dir = Path.GetDirectoryName(file);
                     string newPath = dir != null ? Path.Combine(dir,newFileName) : newFileName;
 
@@ -538,8 +540,8 @@ public static class PfManager {
             profile.Setup.Packages.Add(meta.Entry);
             profile.Setup.Rules.Add(new Profile.Rice.Rule {
                 Selector = new Profile.Rice.Rule.RuleSelector {
-                    Type = Profile.Rice.Rule.RuleSelector.SelectorType.Purl,
-                    Purl = meta.Entry.Purl
+                    Type = Profile.Rice.Rule.RuleSelector.SelectorType.Pref,
+                    Pref = meta.Entry.Pref
                 },
                 Destination = Path.GetDirectoryName(meta.Location),
                 Normalizing = false
@@ -549,10 +551,10 @@ public static class PfManager {
     }
 
     static string GetFileNameFromPurl(string purl) {
-        if (!PackageHelper.TryParse(purl,out (string Label,string? Namespace,string Pid,string? Vid) pdi))
+        if (!PackageHelper.TryParse(purl,out PackageIdentifier pdi))
             return $"{purl.Replace(':','_').Replace('/','_')}{Extension}";
         string ns = pdi.Namespace != null ? $"{pdi.Namespace}." : "";
-        string vid = pdi.Vid ?? "unresolved";
-        return $"{ns}{pdi.Pid}@{vid}{Extension}";
+        string vid = pdi.Version ?? "unresolved";
+        return $"{ns}{pdi.Identity}@{vid}{Extension}";
     }
 }
