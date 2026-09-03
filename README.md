@@ -14,4 +14,6 @@ ShulkerRDK is a modular low-code SDK and resource synthesis tool designed specif
 
 ## License
 
-This whole project is licensed under GPLv3.
+This whole project except wrappers in `scripts` folder is licensed under GPLv3.
+
+wrappers in `scripts` folder is licensed under LGPLv3.

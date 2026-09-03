@@ -14,4 +14,6 @@ ShulkerRDK 是一个专为 Minecraft 开发设计的模块化低代码 SDK 和�
 
 ## 许可证
 
-本项目基于 GPLv3 获得许可。
+本项目除了 在 `scripts` 目录内的 wrapper 以外, 均基于 GPLv3 获得许可。
+
+`scripts` 目录内的 wrapper 基于 LGPLv3 获得许可。
