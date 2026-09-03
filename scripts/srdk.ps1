@@ -2,7 +2,7 @@
 $ProgressPreference = 'SilentlyContinue'
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 
-$ReleaseSourceId = 'gh:LiPolymer/ShulkerRDK@B0.16'
+$ReleaseSourceId = 'gl:LiPolymer/ShulkerRDK@B0.20'
 
 $BaseDir = $PSScriptRoot
 $BinDir = Join-Path $BaseDir 'shulker/local/bin'

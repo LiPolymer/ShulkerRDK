@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-RELEASE_SOURCE_ID='gh:LiPolymer/ShulkerRDK@B0.16'
+RELEASE_SOURCE_ID='gl:LiPolymer/ShulkerRDK@B0.20'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
 BIN_DIR="$SCRIPT_DIR/shulker/local/bin"
