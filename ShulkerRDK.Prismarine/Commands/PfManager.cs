@@ -163,14 +163,18 @@ public static class PfManager {
         }
     }
 
-    static void Serialize(string directory,bool destroySource,IChainedLikeTerminal ct) {
+    static void Serialize(string directory, bool destroySource, IChainedLikeTerminal ct) {
         if (!Directory.Exists(directory)) {
-            ct.WriteLine($"&c目录不存在&8[&7{directory}&8]",Terminal.MessageType.Error);
+            ct.WriteLine($"&c目录不存在&8[&7{directory}&8]", Terminal.MessageType.Error);
             return;
         }
 
-        string[] files = Directory.GetFiles(directory,"*",SearchOption.AllDirectories)
-            .Where(f => !f.EndsWith(Extension))
+        string[] files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+            .Where(f => !f.EndsWith(Extension)
+                        && (f.EndsWith(".jar")
+                            || f.EndsWith(".zip")
+                            || f.EndsWith(".disabled")
+                            || f.EndsWith(".ban")))
             .ToArray();
 
         if (files.Length == 0) {
