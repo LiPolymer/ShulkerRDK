@@ -1,5 +1,6 @@
 ﻿using ShulkerRDK.ResourceMagick.Command;
 using ShulkerRDK.ResourceMagick.Levitate;
+using ShulkerRDK.ResourceMagick.VersionConverter;
 using ShulkerRDK.Shared;
 
 namespace ShulkerRDK.ResourceMagick;
@@ -8,9 +9,11 @@ namespace ShulkerRDK.ResourceMagick;
 public class Extension : ExtensionBase {
     public Extension() {
         Commands.Add("png2psd",Formatter.Command);
+        Commands.Add("mrvc",Mrvc.Command);
         
         LevitateMethods.Add("psdcvt",PsdConverter.Method);
         LevitateMethods.Add("pbrex",PbrExtractor.Method);
+        LevitateMethods.Add("mrvc",Mrvc.Method);
         
         LevitateAliases.Add("^psdCvt$", "psdcvt \"%project.src%\" \"%project.cache%\"");
         LevitateAliases.Add("^pbrEx$", "pbrex \"%project.src%\" \"%project.cache%\"");
