@@ -6,6 +6,10 @@
 
 <img src="https://lipoly.ink/assets/badges/humanity.svg" alt="This project was built by human" width="200">
 
+> [!NOTE]
+> some extensions may have generative llm involved.
+> <img src="https://lipoly.ink/assets/badges/llmDisclosure.svg" alt="This project contains human-audited ai generated code" width="200">
+
 You can use this tool by using [resource pack template](https://github.com/LiPolymer/ShulkerRDK.RPTemplate) or [mod pack template](https://github.com/LiPolymer/ShulkerRDK.MPTemplate)
 
 ## Overview

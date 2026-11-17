@@ -6,6 +6,11 @@
 
 <img src="https://lipoly.ink/assets/badges/humanity.svg" alt="This project was built by human" width="200">
 
+> [!NOTE]
+> 部分扩展可能有生成式 AI 介入开发.
+> <img src="https://lipoly.ink/assets/badges/llmDisclosure.svg" alt="This project contains human-audited ai generated code" width="200">
+
+
 您可以通过使用[这个模板](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)来使用这个工具
 
 ## 概述
