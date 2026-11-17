@@ -221,8 +221,6 @@ mrvc "src/assets" "build/converted" 3 4
 
 输出包元数据保留描述和未知节点，按目标格式写旧 `pack_format` 或新 `min_format/max_format`；纯 assets 输入不生成元数据。输入与输出均拒绝危险路径、符号链接和不明确的文件冲突；在独占暂存中转换，全部成功后才发布结果，不覆盖已有目标。`overlays` 条件不会自动迁移，遇到时警告。
 
-### 来源、许可与验证
+### 来源与许可
 
 转换代码和映射数据依据 ResourcePackConverter 的 MIT 许可改写，并保留 agentdid127 与其 Hypixel 上游的许可通知。完整通知位于 `VersionConverter/ResourcePackConverter.LICENSE.txt`，随构建/发布复制。
-
-回归测试包括 Command/Method 路径基准、目录/ZIP 与纯 assets 结构、实际 GUI/地图像素和九宫格元数据、语言/模型/blockstate 联动，以及未知版本、歧义布局和缺失反向规则的失败行为。GUI 与地图对照样本由上述固定提交的 Java 实现实际生成，记录在测试项目 `Fixtures/rpc-15-to-34.json`；比较解码后的 RGBA，而不是 PNG 压缩字节。测试不代替 Minecraft 内渲染验证。

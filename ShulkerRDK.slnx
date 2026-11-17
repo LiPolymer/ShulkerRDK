@@ -16,7 +16,4 @@
     <Project Path="submodules\Trident.Net\src\TridentCore.Pref\TridentCore.Pref.csproj" />
     <Project Path="submodules\Trident.Net\src\TridentCore.Text\TridentCore.Text.csproj" />
   </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="ShulkerRDK.ResourceMagick.Tests/ShulkerRDK.ResourceMagick.Tests.csproj" />
-  </Folder>
 </Solution>
