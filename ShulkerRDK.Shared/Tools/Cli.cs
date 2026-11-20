@@ -75,7 +75,9 @@ public static partial class Tools {
 
     static void DisplayMissingParam(string[] args,int depth,IChainedLikeTerminal ct) {
         List<string> argList = args.ToList();
-        argList.Add("_");
+        while (argList.Count <= depth) {
+            argList.Add("_");
+        }
         ct.WriteLine($"缺少参数&8[{HighLightParam(argList.ToArray(),depth)}&8]",Terminal.MessageType.Error);
     }
 
