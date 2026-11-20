@@ -1,9 +1,16 @@
 using System.Diagnostics;
-using System.Net;
 
 namespace ShulkerRDK.Shared;
 
 public static class FileDownloader {
+    static readonly HttpClient Client = CreateClient();
+
+    static HttpClient CreateClient() {
+        HttpClient client = new();
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("ShulkerRDK");
+        return client;
+    }
+
     public static void DownloadFile(string fileUrl,string destinationPath,bool progBar = true) {
         string tempPath = destinationPath + ".tmp";
         try {
@@ -11,16 +18,18 @@ public static class FileDownloader {
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) {
                 Directory.CreateDirectory(dir);
             }
-            // 创建请求
-#pragma warning disable SYSLIB0014
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(fileUrl);
-#pragma warning restore SYSLIB0014
 
             // 获取响应
-            using HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            using Stream responseStream = response.GetResponseStream();
+            using HttpResponseMessage response = Client.GetAsync(fileUrl,HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode) {
+                Terminal.WriteLine("",$"下载失败: {response.ReasonPhrase}",Terminal.MessageType.Error);
+                Terminal.WriteLine("",$"HTTP状态码: {(int)response.StatusCode}",Terminal.MessageType.Error);
+                return;
+            }
+
+            using Stream responseStream = response.Content.ReadAsStream();
             // 获取文件总大小
-            long totalBytes = response.ContentLength;
+            long totalBytes = response.Content.Headers.ContentLength ?? -1;
             bool canReportProgress = totalBytes > 0;
             long bytesReceived = 0;
 
@@ -56,11 +65,11 @@ public static class FileDownloader {
                 Terminal.WriteLine($"下载完成！大小: {FormatFileSize(bytesReceived)}");
             }
         }
-        catch (WebException ex) {
+        catch (HttpRequestException ex) {
             TryDeleteTempFile(tempPath);
             Terminal.WriteLine("",$"下载失败: {ex.Message}",Terminal.MessageType.Error);
-            if (ex.Response != null) {
-                Terminal.WriteLine("",$"HTTP状态码: {(int)((HttpWebResponse)ex.Response).StatusCode}",Terminal.MessageType.Error);
+            if (ex.StatusCode != null) {
+                Terminal.WriteLine("",$"HTTP状态码: {(int)ex.StatusCode.Value}",Terminal.MessageType.Error);
             }
         }
         catch (Exception ex) {
