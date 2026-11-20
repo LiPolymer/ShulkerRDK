@@ -51,11 +51,14 @@ public static partial class Tools {
         string[] resolved = input.Split('.');
         if (resolved.Length - 1 < depth) return input;
 
-        string segment = resolved[^(depth + 1)];
-        string? stepped = StepVersionSegment(segment);
+        int targetIndex = resolved.Length - 1 - depth;
+        string? stepped = TransformVersionSegment(resolved[targetIndex],n => n + 1);
         if (stepped == null) return input;
 
-        resolved[^(depth + 1)] = stepped;
+        resolved[targetIndex] = stepped;
+        for (int i = targetIndex + 1; i < resolved.Length; i++) {
+            resolved[i] = TransformVersionSegment(resolved[i],_ => 0) ?? resolved[i];
+        }
         return string.Join(".",resolved);
     }
 
@@ -78,7 +81,7 @@ public static partial class Tools {
                 minor = StepShulkerMinor(minor,ref major);
                 return $"{status}{major}.{minor}";
             case 2:
-                return $"{status}{major + 1}.{minor}";
+                return $"{status}{major + 1}.00";
             default:
                 return original;
         }
@@ -109,21 +112,21 @@ public static partial class Tools {
         return $"{Base36Chars[d0]}{Base36Chars[d1]}";
     }
 
-    static string? StepVersionSegment(string segment) {
+    static string? TransformVersionSegment(string segment,Func<long,long> transform) {
         if (long.TryParse(segment,NumberStyles.Integer,CultureInfo.InvariantCulture,out long num)) {
-            return (num + 1).ToString(CultureInfo.InvariantCulture);
+            return transform(num).ToString(CultureInfo.InvariantCulture);
         }
 
         Match leadingMatch = LeadingDigitsRegex().Match(segment);
         if (leadingMatch.Success &&
             long.TryParse(leadingMatch.Groups[1].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out long leadingNum)) {
-            return $"{leadingNum + 1}{leadingMatch.Groups[2].Value}";
+            return $"{transform(leadingNum)}{leadingMatch.Groups[2].Value}";
         }
 
         Match trailingMatch = TrailingDigitsRegex().Match(segment);
         if (trailingMatch.Success &&
             long.TryParse(trailingMatch.Groups[2].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out long trailingNum)) {
-            return $"{trailingMatch.Groups[1].Value}{trailingNum + 1}";
+            return $"{trailingMatch.Groups[1].Value}{transform(trailingNum)}";
         }
 
         return null;
