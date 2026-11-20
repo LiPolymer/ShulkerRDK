@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ShulkerRDK.Shared;
@@ -6,7 +7,8 @@ public static partial class Tools {
     public static string AliasResolver(string original,Dictionary<string,string> aliases) {
         foreach (KeyValuePair<string,string> alias in aliases) {
             Regex regex = new Regex(alias.Key);
-            if (regex.IsMatch(original)) {
+            Match match = regex.Match(original);
+            if (match.Success) {
                 Terminal.WriteLine("AliasResolver",$"&7PatternMatched&8[&7{alias.Key}&8]",Terminal.MessageType.Debug);
                 return regex.Replace(original,alias.Value);
             }
@@ -16,17 +18,12 @@ public static partial class Tools {
 
     public static string[] AliasResolver(string[] original,Dictionary<string,string> aliases) {
         string partAsm = string.Empty;
-        int index = 0;
-        foreach (string part in original) {
-            partAsm += " " + part;
-            partAsm = partAsm.Trim();
+        for (int index = 0; index < original.Length; index++) {
+            partAsm = index == 0 ? original[0].Trim() : $"{partAsm} {original[index]}".Trim();
             string resolvedAsm = AliasResolver(partAsm,aliases);
             if (resolvedAsm != partAsm) {
-                List<string> parts = ResolveArgs(resolvedAsm).ToList();
-                parts.AddRange(GetSubGroup(original,index + 1));
-                return parts.ToArray();
+                return [..ResolveArgs(resolvedAsm), ..GetSubGroup(original,index + 1)];
             }
-            index++;
         }
         return original;
     }
@@ -81,26 +78,59 @@ public static partial class Tools {
             throw new ArgumentException("分隔符必须单符号");
         }
 
-        // 转义替换为临时字符
-        const char tempOpen = '\x01';
-        const char tempClose = '\x02';
+        char openChar = open[0];
+        char closeChar = close[0];
 
-        string protect = input.Replace(open + open,tempOpen.ToString())
-            .Replace(close + close,tempClose.ToString());
+        if (openChar == closeChar) {
+            return EscapeReplacer(input,open,key => replacer(key.Trim()));
+        }
 
-        // 构建正则表达式，匹配未被转义的目标结构
-        string pattern = Regex.Escape(open) + "(.*?)" + Regex.Escape(close);
-        Regex regex = new Regex(pattern);
+        Stack<(StringBuilder Buffer, int EscapedOpens)> stack = new();
+        StringBuilder current = new();
+        int currentEscapedOpens = 0;
 
-        string resolved = regex.Replace(protect,match => {
-            string key = match.Groups[1].Value.Trim();
-            return replacer(key);
-        });
+        int i = 0;
+        while (i < input.Length) {
+            char c = input[i];
+            if (c == openChar) {
+                if (i + 1 < input.Length && input[i + 1] == openChar) {
+                    current.Append(openChar);
+                    currentEscapedOpens++;
+                    i += 2;
+                } else {
+                    stack.Push((current, currentEscapedOpens));
+                    current = new StringBuilder();
+                    currentEscapedOpens = 0;
+                    i++;
+                }
+            } else if (c == closeChar) {
+                bool hasDoubleClose = i + 1 < input.Length && input[i + 1] == closeChar;
+                if (hasDoubleClose && (stack.Count == 0 || currentEscapedOpens > 0)) {
+                    current.Append(closeChar);
+                    if (currentEscapedOpens > 0) currentEscapedOpens--;
+                    i += 2;
+                } else if (stack.Count > 0) {
+                    string key = current.ToString().Trim();
+                    string replaced = replacer(key);
+                    (current, currentEscapedOpens) = stack.Pop();
+                    current.Append(replaced);
+                    i++;
+                } else {
+                    current.Append(closeChar);
+                    i++;
+                }
+            } else {
+                current.Append(c);
+                i++;
+            }
+        }
 
-        // 恢复转义字符，将临时字符替换回原始分隔符
-        string result = resolved.Replace(tempOpen.ToString(),open)
-            .Replace(tempClose.ToString(),close);
+        while (stack.Count > 0) {
+            string unclosed = current.ToString();
+            (current, currentEscapedOpens) = stack.Pop();
+            current.Append(openChar).Append(unclosed);
+        }
 
-        return result;
+        return current.ToString();
     }
 }
