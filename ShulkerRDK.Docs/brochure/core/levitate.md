@@ -4,39 +4,38 @@ Levitate 方法是 ShulkerRDK 实现自动化和客制化的主要工具
 
 它们以 DSL (指令式领域特定语言) 的形式写在 `.lvt` 脚本文件中, 通过定义一系列命令来指导 ShulkerRDK 自动完成较为复杂的任务
 
-
+---
 
 ## 开始编写您的脚本
 
 在 `./shulker/tasks/` 目录下创建一个 `.lvt` 文件, 即可开始编写
 
 **基本语法:**
-```
+```text
 <方法名> [参数1] [参数2] [参数3] ...
 ```
 
 - 每行一条指令
 - 参数之间用空格分隔
 - 包含空格的参数需要用双引号包裹
-- 以 `#` 开头的行为注释, 将被跳过
-- 空行将被跳过
+- 以 `#` 开头的行、空行、以及**以空格开头的行**都会被跳过 *(所以写脚本时不要做行首缩进)*
 
 > [!TIP]
 > 您可能注意到带有空格的参数被双引号包裹
 >
 > 这和 ShulkerRDK 如何解析参数有关 — 通常参数以空格分割, 但双引号内包裹的内容会作为一个整体来解析
 
+---
 
+## 变量与表达式
 
-## 变量/表达式?
+在脚本执行时, ShulkerRDK 会按以下顺序自动处理每行指令:
 
-在脚本执行时, ShulkerRDK 会按以下顺序自动处理传入的指令:
-
-1. **变量注入** — 使用 `^变量名^` 语法, 引用 `var` 定义的局部变量
+1. **变量注入** — 使用 `^变量名^` 语法引用 `var` 定义的局部变量 (`^^` 可转义为字面量 `^`)
 2. **别名解析** — 自动匹配已注册的别名并进行替换
-3. **环境变量注入** — 使用 `%变量名%` 语法, 引用环境变量
-4. **表达式求值** — 使用 `{方法 参数}` 语法, 执行方法并用返回值替换
-5. 最终执行
+3. **环境变量注入** — 使用 `%环境变量名%` 语法引用环境变量 (`%%` 可转义为字面量 `%`)
+4. **表达式求值** — 使用 `{方法 参数}` 语法执行方法并用返回值替换 (支持多层嵌套, 从内层向外依次求值；<code v-pre>{{</code> 和 <code v-pre>}}</code> 可转义字面量括号；返回 `null` 时替换为 `"null"`)
+5. **最终执行**
 
 **执行示例:**
 ```lvt
@@ -50,27 +49,28 @@ echo ^my_var^
 # 使用环境变量
 echo "项目名: %project.name%"
 
-# 使用表达式
-echo "缓存路径: {path dir %project.cache%/test.txt}"
+# 使用嵌套表达式
+env set my_target "./src/assets/icon.png"
+echo "目录: {path dir {env get my_target}}"
 ```
 
-
+---
 
 ## 自动环境变量
 
 每个 Levitate 脚本执行时, 以下环境变量会自动注入:
 
-| 环境变量               | 说明      | 示例值                           |
-| ------------------ | ------- | ----------------------------- |
-| `%project.src%`    | 项目资源根目录 | `./src/`                      |
-| `%project.name%`   | 项目名称    | `My Project`                  |
-| `%project.output%` | 项目输出目录  | `./build/`                    |
-| `%project.ver%`    | 项目版本号   | `1.0.0`                       |
-| `%project.cache%`  | 项目缓存目录  | `./shulker/local/cache/build` |
+| 环境变量 | 说明 | 示例值 |
+| :--- | :--- | :--- |
+| `%project.src%` | 项目资源根目录 | `./src/` |
+| `%project.name%` | 项目名称 | `My Project` |
+| `%project.output%` | 项目输出目录 | `./build/` |
+| `%project.ver%` | 项目版本号 | `1.0.0` |
+| `%project.cache%` | 项目缓存目录 | `./shulker/local/cache/build` |
 
 此外, 您在项目配置中定义的自定义环境变量也会被注入
 
-
+---
 
 ## 局部变量 — var
 
@@ -88,7 +88,7 @@ echo ^greeting^ World!
 # 输出: Hello World!
 ```
 
-
+---
 
 ## 环境变量 — env
 
@@ -110,13 +110,13 @@ echo "构建模式: ^mode^"
 ```
 
 > [!NOTE]
-> `env get` 会返回环境变量的值, 可以被大括号表达式捕获, 当然您也可以使用 `%环境变量名%`
+> `env get` 会返回环境变量的值, 可以被大括号表达式捕获, 当然您也可以直接写 `%环境变量名%`
 >
 > 如果变量不存在, 会输出警告并返回空值
 >
-> 脚本中设置的环境变量仅在当前解释器实例中有效, 脚本结束后不会保留
+> 脚本中设置的环境变量仅在当前解释器实例中有效, 脚本结束后不会写回 `proj.json`
 
-
+---
 
 ## 别名
 
@@ -124,11 +124,11 @@ echo "构建模式: ^mode^"
 
 **内置 Levitate 别名:**
 
-| 别名模式            | 替换为                                                                                  |
-| --------------- | ------------------------------------------------------------------------------------ |
-| `^makeCleanup$` | `delete "%project.cache%"`                                                           |
-| `^makeCopy`     | `copy "%project.src%" "%project.cache%" true `                                       |
-| `^makePkg$`     | `pkgr zip make "%project.cache%" "%project.output%%project.name%_%project.ver%.zip"` |
+| 别名模式 | 替换为 |
+| :--- | :--- |
+| `^makeCleanup$` | `delete "%project.cache%"` |
+| `^makeCopy` | `copy "%project.src%" "%project.cache%" true ` |
+| `^makePkg$` | `pkgr zip make "%project.cache%" "%project.output%%project.name%_%project.ver%.zip"` |
 
 **使用示例:**
 ```lvt
@@ -139,7 +139,7 @@ makeCleanup
 # 等价于: delete "%project.cache%"
 ```
 
-
+---
 
 ## echo
 
@@ -154,10 +154,10 @@ echo [内容]
 echo "Hello World!"
 echo 不带引号的文本
 echo "当前版本: %project.ver%"
-echo "构建路径: {path dir \"%project.output%\"}"
+echo "构建路径: {path dir "%project.output%"}"
 ```
 
-
+---
 
 ## input
 
@@ -174,27 +174,27 @@ var user_input {input "请输入您的名字: "}
 echo "你好, ^user_input^!"
 ```
 
-
+---
 
 ## run
 
-从脚本中执行另一个 Levitate Task 脚本:
+从脚本中执行另一个 Levitate Task 脚本 *(路径相对于当前脚本所在目录, 如 `./shulker/tasks/`)*:
 
 ```lvt
 run <脚本路径>        # 执行已有脚本
-run <脚本路径> new    # 使用新的解释器实例执行
+run <脚本路径> new    # 使用新的解释器实例执行 (变量与环境相互隔离)
 ```
 
 **示例:**
 ```lvt
-# 执行 ./shulker/tasks/build.lvt
-run ./shulker/tasks/build.lvt
+# 执行同目录下的 build.lvt
+run build.lvt
 
-# 使用新解释器实例执行 (变量和环境不会互相影响)
-run ./shulker/tasks/cleanup.lvt new
+# 使用新解释器实例执行
+run cleanup.lvt new
 ```
 
-
+---
 
 ## import
 
@@ -207,15 +207,17 @@ import <扩展ID>
 **示例:**
 ```lvt
 # 导入 ResourceMagick 扩展的方法
-import shulker.resourcemagick
+import shulker.magick
 
 # 导入 ModrinthPSK 扩展的方法
 import shulker.modrinth
 ```
 
+常用第一方扩展 ID: `shulker.modrinth`、`shulker.prismarine`、`shulker.magick`、`shulker.ase`、`shulker.ffmpeg`、`shulker.rrt`
+
 导入后, 该扩展提供的所有 Levitate 方法和别名都可以在当前脚本中使用
 
-
+---
 
 ## copy
 
@@ -225,12 +227,12 @@ import shulker.modrinth
 copy <源路径> [目标路径] [是否覆盖] [忽略正则]
 ```
 
-| 参数       | 必填 | 默认值     | 说明                        |
-| -------- | -- | ------- | ------------------------- |
-| `<源路径>`  | 是  | -       | 要复制的文件或目录路径               |
-| `[目标路径]` | 否  | 源目录的父目录 | 复制目标位置                    |
-| `[是否覆盖]` | 否  | `true`  | `true` 覆盖已存在文件，`false` 跳过 |
-| `[忽略正则]` | 否  | 无       | 匹配此正则的文件将被忽略              |
+| 参数 | 必填 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<源路径>` | 是 | - | 要复制的文件或目录路径 |
+| `[目标路径]` | 目录可选 / 单文件建议必填 | 源目录的父目录 | 目标目录或目标文件路径 |
+| `[是否覆盖]` | 否 | `true` | 目录模式下 `true` 覆盖已存在文件, `false` 跳过 |
+| `[忽略正则]` | 否 | 无 | 匹配此正则的文件将被跳过忽略 |
 
 **示例:**
 ```lvt
@@ -247,50 +249,53 @@ copy "./src/icon.png" "./build/icon.png"
 > [!NOTE]
 > `copy` 会自动创建不存在的目标目录
 
-
+---
 
 ## delete
 
 删除文件或目录:
 
 ```lvt
-delete <目标路径> [正则过滤]
+delete <目标路径> [忽略正则]
 ```
 
-| 参数       | 必填 | 说明                |
-| -------- | -- | ----------------- |
-| `<目标路径>` | 是  | 要删除的文件或目录路径       |
-| `[正则过滤]` | 否  | 如果提供，则只删除匹配此正则的文件 |
+| 参数 | 必填 | 说明 |
+| :--- | :--- | :--- |
+| `<目标路径>` | 是 | 要删除的文件或目录路径 |
+| `[忽略正则]` | 否 | 如果提供, 则**跳过匹配此正则的文件 (保留它们)**, 删除目录下其余文件 |
+
+> [!CAUTION]
+> 注意这里的正则参数是**排除/忽略规则**而不是“只删除匹配文件”！不传第二个参数会直接删除整个目标目录或文件；传入正则时会保留匹配到的文件, 并删除目录下其他所有文件
 
 **示例:**
 ```lvt
 # 删除整个目录
 delete "%project.cache%"
 
-# 删除目录下所有 .tmp 文件
-delete "%project.cache%" "\.tmp$"
+# 清空缓存目录, 但保留 .keep 文件
+delete "%project.cache%" "\.keep$"
 ```
 
-
+---
 
 ## flat
 
 平整目录 — 将目录树中所有文件复制到目标目录, 忽略子目录结构:
 
-```
+```lvt
 flat <源目录> <目标目录> [是否覆盖] [忽略正则]
 ```
 
-| 参数       | 必填 | 默认值    | 说明               |
-| -------- | -- | ------ | ---------------- |
-| `<源目录>`  | 是  | -      | 源目录路径            |
-| `<目标目录>` | 是  | -      | 目标目录路径           |
-| `[是否覆盖]` | 否  | `true` | `true` 或 `false` |
-| `[忽略正则]` | 否  | 无      | 匹配的文件将被忽略        |
+| 参数 | 必填 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<源目录>` | 是 | - | 源目录路径 |
+| `<目标目录>` | 是 | - | 目标目录路径 |
+| `[是否覆盖]` | 否 | `true` | `true` 或 `false` |
+| `[忽略正则]` | 否 | 无 | 匹配的文件将被忽略 |
 
 **示例:**
 ```lvt
-# 将 src 下所有文件（含子目录）平铺到 build
+# 将 src 下所有文件 (含子目录) 平铺到 build
 flat "%project.src%" "%project.output%" true
 
 # 平铺但忽略 .meta 文件
@@ -299,7 +304,7 @@ flat "./src/" "./build/" true "\.meta$"
 
 `copy` 与 `flat` 的区别: `copy` 保留目录结构, `flat` 将所有文件放在同一目录下
 
-
+---
 
 ## sh
 
@@ -323,61 +328,63 @@ Shell 命令的输出会实时打印到终端, 执行完成后会显示耗时
 > [!WARNING]
 > `sh` 命令直接调用系统进程, 注意不同操作系统的命令差异
 
-
+---
 
 ## verm
 
-版本管理 (Levitate 版本):
+版本管理 (规则同 [`verm` 指令](commands.md#verm)):
 
 ```lvt
-verm smajor            # 主版本号 +1
-verm sminor            # 次版本号 +1
+verm smajor            # 主版本号 +1 (较低位段归零)
+verm sminor            # 次版本号 +1 (较低位段归零)
 verm sfix              # 修订号 +1
 verm set <版本号>       # 直接设置版本号
-verm get <深度>         # 获取版本号中指定深度的部分
+verm get <深度>         # 获取版本号中从右数起指定深度的部分 (0 为末尾段)
 ```
 
 **示例:**
 ```lvt
 verm sfix
-# 1.0.0 → 1.0.1
+# 1.0.0 -> 1.0.1
+
+verm sminor
+# 1.0.1 -> 1.1.0
 
 verm set 2.1.0
-# 版本号设置为 2.1.0
-
 var major_ver {verm get 2}
 echo "主版本号: ^major_ver^"
 ```
 
 > [!NOTE]
-> 执行 `verm` 修改版本号后, 会自动更新环境变量 `project.ver`
+> 执行 `verm` 修改版本号后, 会自动更新环境变量 `%project.ver%`
 
-
+---
 
 ## netfile
 
 还原网络链接文件:
 
 ```lvt
-netfile restore [源目录] [输出目录]
+netfile restore                       # 原地还原 %project.src% 并删除 .nfm 文件
+netfile restore <源目录> <输出目录>     # 还原到输出目录 (保留原 .nfm 文件)
 # 或简写:
-netfile r [源目录] [输出目录]
+netfile r [源目录 输出目录]
 ```
 
 **示例:**
 ```lvt
-# 从项目资源根目录还原
+# 从项目资源根目录原地还原
 netfile restore
 
-# 从指定目录还原
-netfile restore "./downloads/" "./src/"
+# 还原到构建缓存目录 (保留 .nfm)
+netfile r "%project.src%" "%project.cache%"
 ```
 
-
+---
 
 ## check
 
-条件检查 — 如果第一个参数为 `true`, 则执行后续方法:
+条件检查 — 如果第一个参数为 `true`, 则执行后续方法 *(需为注册的 Levitate 方法名, 不能直接写别名)*:
 
 ```lvt
 check <条件> <方法名> [方法参数...]
@@ -396,7 +403,7 @@ check {path isdir "%project.cache%"} delete "%project.cache%"
 > [!NOTE]
 > `check` 仅在第一个参数严格等于 `"true"` 时才执行后续方法
 
-
+---
 
 ## path
 
@@ -405,7 +412,7 @@ check {path isdir "%project.cache%"} delete "%project.cache%"
 ```lvt
 path remapper <基准路径> <目标路径> <目标根> [新扩展名]    # 路径重映射
 path dir <文件路径>                                      # 获取文件所在目录
-path isdir <路径>                                        # 判断是否为目录
+path isdir <路径>                                        # 判断目录是否存在
 ```
 
 **示例:**
@@ -419,11 +426,10 @@ var dir_path {path dir "./src/assets/icon.png"}
 echo "目录: ^dir_path^"
 
 # 判断是否为目录
-var is_dir {path isdir "./src/assets"}
-check ^is_dir^ echo "assets 是一个目录"
+check {path isdir "./src/assets"} echo "assets 是一个目录"
 ```
 
-
+---
 
 ## list
 
@@ -432,7 +438,6 @@ check ^is_dir^ echo "assets 是一个目录"
 ```lvt
 list get <列表字符串> <索引>           # 获取元素
 list set <列表字符串> <索引> <新值>    # 设置元素
-list add <列表字符串> <新元素>         # 添加元素
 ```
 
 **示例:**
@@ -445,12 +450,9 @@ echo "第一个: ^first^"
 
 # 设置元素
 var my_list {list set ^my_list^ 1 "blueberry"}
-
-# 添加元素
-var my_list {list add ^my_list^ "date"}
 ```
 
-
+---
 
 ## regex
 
@@ -473,7 +475,7 @@ echo "^result^"
 # 输出: hello-world
 ```
 
-
+---
 
 ## not
 
@@ -486,11 +488,10 @@ not <true/false>
 **示例:**
 ```lvt
 var is_dir {path isdir "./src"}
-var is_not_dir {not ^is_dir^}
-check ^is_not_dir^ echo "src 不是目录"
+check {not ^is_dir^} echo "src 不是目录"
 ```
 
-
+---
 
 ## ifr
 
@@ -502,11 +503,8 @@ ifr <查找文本> <替换文本> <文件路径>
 
 **示例:**
 ```lvt
-# 替换文件中的版本号
-ifr "1.0.0" "2.0.0" "./src/pack.mcmeta"
-
 # 替换文件中的占位符
-ifr "{{VERSION}}" "%project.ver%" "./src/README.txt"
+ifr "{{VERSION}}" "%project.ver%" "%project.cache%/pack.mcmeta"
 ```
 
 > [!NOTE]
@@ -514,11 +512,11 @@ ifr "{{VERSION}}" "%project.ver%" "./src/README.txt"
 >
 > 如需正则替换请使用 `regex replace`
 
-
+---
 
 ## pkgr
 
-打包/解包工具, 支持 zip 和 tar 格式:
+打包/解包工具, 支持 `zip` 和 `tar` 格式:
 
 ```lvt
 pkgr zip make   <源目录> <输出路径>     # 创建 zip 压缩包

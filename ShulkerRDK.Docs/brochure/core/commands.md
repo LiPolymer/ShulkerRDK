@@ -14,7 +14,7 @@ help c
 
 这会列出当前所有可用的指令及其简要描述
 
-
+---
 
 ## exit
 
@@ -24,7 +24,7 @@ help c
 正在退出...
 ```
 
-
+---
 
 ## env
 
@@ -39,27 +39,25 @@ env list                  # 列出所有环境变量
 
 **示例:**
 ```
->env set project.name "My Resource Pack"
-已将项目环境变量[project.name]修改为[My Resource Pack]
+>env set my.var "Hello"
+[my.var]定义为[Hello]
 
->env get project.name
-项目环境变量[project.name]>[My Resource Pack]
+>env get my.var
+项目环境变量[my.var]>[Hello]
 
 >env list
 所有项目环境变量:
- - [project.src]>[./src/]
- - [project.output]>[./build/]
- - [project.name]>[My Resource Pack]
+ - [my.var]>[Hello]
 
->env remove old.var
+>env remove my.var
 ```
 
 > [!TIP]
-> 环境变量会被持久化保存到项目配置文件中, 下次启动时依然有效
+> 环境变量会被持久化保存到 `./shulker/proj.json` 中, 下次启动时依然有效
 >
-> 在 Levitate 脚本中, 环境变量可以通过 `%变量名%` 语法或 `env get` 方法 引用
+> 在 Levitate 脚本中, 环境变量可以通过 `%变量名%` 语法或 `env get` 方法引用
 
-
+---
 
 ## clear
 
@@ -68,7 +66,7 @@ env list                  # 列出所有环境变量
 clear
 ```
 
-
+---
 
 ## help
 
@@ -78,6 +76,8 @@ clear
 help commands     (或 help c)    # 列出所有指令
 help alias        (或 help a)    # 列出所有别名
 ```
+
+---
 
 ## proj
 
@@ -107,16 +107,16 @@ My Project@1.0.0
 已将项目输出目录修改为[./dist/]
 ```
 
-
+---
 
 ## verm
 
-项目版本管理指令, 支持语义化版本号的步进和直接设置:
+项目版本管理指令, 支持常规版本号、带后缀的预发布版本号以及 Shulker 版本格式的步进与直接设置:
 
 ```lvt
 verm show              # 显示当前版本号
-verm smajor            # 主版本号 +1
-verm sminor            # 次版本号 +1
+verm smajor            # 主版本号 +1 (较低位段归零)
+verm sminor            # 次版本号 +1 (较低位段归零)
 verm sfix              # 修订号 +1
 verm set <版本号>       # 直接设置版本号
 ```
@@ -130,13 +130,26 @@ verm set <版本号>       # 直接设置版本号
 项目版本更新为[1.0.1]
 
 >verm sminor
-项目版本更新为[1.1.1]
+项目版本更新为[1.1.0]
+
+>verm smajor
+项目版本更新为[2.0.0]
 
 >verm set 2.0.0
 已将项目版本修改为[2.0.0]
 ```
 
+::: details **关于 Shulker 版本格式与预发布后缀**
 
+- **Shulker 版本格式 (`R/B/A/D<主版本>.<两位次版本>[fix<N>]`)**, 例如 `B0.20`、`R1.00`:
+  - `sfix`: `B0.20` -> `B0.20fix1` -> `B0.20fix2`
+  - `sminor`: `B0.20fix1` -> `B0.21` (`00`–`99` 之后进入 `a0`–`zz` 进位, 并去掉 `fix`)
+  - `smajor`: `B0.21fix2` -> `B1.00`
+- **预发布后缀**: 比如 `1.2.3-alpha` 执行 `sfix` 会变成 `1.2.4-alpha`, 执行 `sminor` 会变成 `1.3.0-alpha`
+
+:::
+
+---
 
 ## netfile
 
@@ -145,7 +158,8 @@ verm set <版本号>       # 直接设置版本号
 ```lvt
 netfile create <文件路径> <下载URL>       # 创建网络链接文件
 netfile clean                           # 清理网络文件缓存
-netfile restore [源目录] [输出目录]       # 将链接文件还原为真实文件
+netfile restore                         # 原地还原 %project.src% 下的 .nfm 并删除原链接文件
+netfile restore <源目录> <输出目录>       # 还原到指定目录 (保留原 .nfm 文件)
 ```
 
 **示例:**
@@ -162,8 +176,7 @@ netfile restore [源目录] [输出目录]       # 将链接文件还原为真�
 
 >netfile restore
 警告 此操作将转化链接文件为真实文件,不可撤销
-是否继续? [y/n]
-y
+是否继续? [y/n] y
 正在复原[./src/]
 完成!
 ```
@@ -178,12 +191,9 @@ y
 }
 ```
 
-文件的实际内容存储在 `./shulker/local/netFiles/` 目录下, 以 SHA1 哈希值命名
+文件实体缓存在 `./shulker/local/netFiles/` 目录下, 以 SHA1 哈希值命名
 
-> [!NOTE]
-> `netfile restore` 不传参数时, 默认从项目资源根目录 (`%project.src%`) 还原到自身
-
-
+---
 
 ## ext
 
@@ -197,13 +207,14 @@ ext lookup <扩展ID>          # 查看指定扩展详情
 **示例:**
 ```
 >ext list
-已加载扩展列表...
+已安装的扩展[3]
+ - ShulkerRDK@B0.20#shulker.core
+ - ModrinthPSK@B0.20#shulker.modrinth
 
 >ext lookup shulker.core
-扩展详情...
 ```
 
-
+---
 
 ## task
 
@@ -225,10 +236,9 @@ task <任务名>        # 执行指定任务
  - dev [12lines]
 
 >task build
-开始执行 build.lvt 脚本...
 ```
 
-
+---
 
 ## reload
 
@@ -239,4 +249,22 @@ task <任务名>        # 执行指定任务
 
 ```lvt
 reload
+```
+
+---
+
+## 指令别名
+
+交互模式内置了几个常用短指令别名:
+
+| 输入 | 等价于 |
+| :--- | :--- |
+| `build` | `task build` |
+| `publish` | `task publish` |
+| `run` | `task run` |
+| `dev` | `task dev` |
+
+也可以通过 `env set alias.command.<正则> "<替换内容>"` 自定义自己的指令别名 (重启后生效):
+```lvt
+env set alias.command.^b$ "task build"
 ```

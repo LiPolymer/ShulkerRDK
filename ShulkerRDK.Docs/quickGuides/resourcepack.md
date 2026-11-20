@@ -5,16 +5,16 @@
 - 必要的项目配置
 - 基本的 Minecraft 资源包结构
 - 一些 LevitateTask 脚本
-- ShulkerRDK 二进制文件
-  - **ShulkerRDK** 本体 `srdk` `srdk.exe`
-  - **ShulkerRRT** 扩展 `./shulker/extension/ShulkerRDK.RRT.dll`
-  - **ResourceMagick** 扩展 `./shulker/extension/ShulkerRDK.ResourceMagick.dll`
-  - **AsepriteConverter** 扩展 `./shulker/extension/ShulkerRDK.Aseprite.dll`
+- ShulkerRDK 二进制文件 / 启动器及扩展
+  - **ShulkerRDK** 本体（`srdk` / `srdk.exe` 或 Wrapper 启动脚本）
+  - **ShulkerRRT** 扩展（`ShulkerRDK.RRT`）
+  - **ResourceMagick** 扩展（`ShulkerRDK.ResourceMagick`）
+  - **AsepriteExtractor** 扩展（`ShulkerRDK.Aseprite`）
   
-*ShulkerRDK 和扩展均基于 [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html) 协议获得许可*
+*ShulkerRDK 本体及第一方扩展均基于 [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html) 协议获得许可（`scripts/` 目录内的 Wrapper 启动脚本基于 Apache 2.0 协议）*
 
 ## 开始使用
-#### 0. 获取[这个仓库](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)的内容的内容,打开 ShulkerRDK
+#### 0. 获取[这个仓库](https://github.com/LiPolymer/ShulkerRDK.RPTemplate)的内容，打开 ShulkerRDK
 您可以直接下载,或克隆/分叉... *您怎么方便怎么来!*
 
 下载完成后,您可以通过以下方式运行 ShulkerRDK 并进入交互模式
@@ -79,12 +79,12 @@ proj chname "My Project"
 >
 > --- 
 > 如果您想从 `.png` 文件切换至 `.psd` 文件, 您可以简单地执行以下命令
-> ```
+> ```lvt
 > png2psd ./src
 > ```
 > ShulkerRDK 将会扫描整个 `./src` 目录, 找出所有 `*.png` 文件并自动创建 `*.psd` 格式副本
 >
-> **鉴于 ShulkerRDK 尚不成熟, 请您逐个检查转化后的文件是否正常, 再删除对应的 `*.png` 文件*
+> **鉴于 ShulkerRDK 尚不成熟, 请您逐个检查转化后的文件是否正常, 再删除对应的 `*.png` 文件**
 :::
 
 #### 第一次构建
@@ -106,7 +106,7 @@ build
 
 安装完成后, 请启动一次客户端并将其关闭, 打开Mod配置文件夹, 打开配置文件 `shulkerRRT.json`, 修改 `isShulkerRDKManaged` 项的值为 `true`
 
-找到启动器的 `导出启动脚本` 功能 *(此处以 HMCL 为例, 选中目标版本, 从主页面依次点击 `版本管理 -> 管理 -> 生成启动脚本`)*, 导出为 `.ps1` (PowerShell 脚本格式) 到本仓库内容的 `./shulker/local/client.ps1`
+找到启动器的 `导出启动脚本` 功能 *(此处以 HMCL 为例, 选中目标版本, 从主页面依次点击 `版本管理 -> 管理 -> 生成启动脚本`)*, 导出为 `.ps1` (PowerShell 脚本格式) 到本仓库内的 `./shulker/local/client.ps1`
 
 完成后, 打开 `./shulker/tasks/settings.lvt`, 修改其中的 `X:\Path\To\Your\Game` 到您的游戏目录 *(请注意检查版本隔离情况)*
 
@@ -146,17 +146,17 @@ verm show
 verm set 1.0.0
 ```
 
-如果您要继续使用 `x.x.x` 格式的话,还可以使用下面的指令
+如果您要继续使用 `x.y.z` 语义化格式的话,还可以使用下面的指令 (步进高一级版本号时, 低位段会自动归零; 也支持 Shulker 版本格式与预发布后缀, 详见 [verm 指令](../brochure/core/commands.md#verm))
 
-步进修复版本 (`x.x.x.` -> `x.x.x+1`)
+步进修复版本 (`x.y.z` -> `x.y.(z+1)`)
 ```lvt
-verm  sfix
+verm sfix
 ```
-步进小版本 (`x.x.x.` -> `x.x+1.x`)
+步进小版本 (`x.y.z` -> `x.(y+1).0`)
 ```lvt
 verm sminor
 ```
-步进大版本 (`x.x.x.` -> `x+1.x.x`)
+步进大版本 (`x.y.z` -> `(x+1).0.0`)
 ```lvt
 verm smajor
 ```

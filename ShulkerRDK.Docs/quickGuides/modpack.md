@@ -5,11 +5,11 @@
 - 必要的项目配置
 - 基本的整合包项目结构
 - 一些 LevitateTask 脚本
-- ShulkerRDK 二进制文件
-  - **ShulkerRDK** 本体 `srdk` `srdk.exe`
-  - **ModrinthPSK** 扩展 `./shulker/extension/ShulkerRDK.Modrinth.dll`
+- ShulkerRDK 二进制文件 / 启动器及扩展
+  - **ShulkerRDK** 本体（`srdk` / `srdk.exe` 或 Wrapper 启动脚本）
+  - **ModrinthPSK** 扩展（`ShulkerRDK.Modrinth`）
 
-*ShulkerRDK 和扩展均基于 [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html) 协议获得许可*
+*ShulkerRDK 本体及第一方扩展均基于 [GPLv3](https://www.gnu.org/licenses/quick-guide-gplv3.zh-cn.html) 协议获得许可（`scripts/` 目录内的 Wrapper 启动脚本基于 Apache 2.0 协议）*
 
 ## 开始使用
 #### 0. 获取[这个仓库](https://github.com/LiPolymer/ShulkerRDK.MPTemplate)的内容, 打开 ShulkerRDK
@@ -29,7 +29,7 @@
 proj chname "My Project"
 ```
 > [!IMPORTANT]
-> 如果您准备使用此模板开启一个新项目, 您可能还需要手动修改 `pack.mcmeta` 文件
+> 如果您准备使用此模板开启一个新项目, 您可能还需要手动修改 `./shulker/mrpack.template.json` 中的整合包元数据与依赖版本 (如 Minecraft 版本与模组加载器)
 
 > [!TIP]
 > 您可能注意到 `My Project` 是被包裹在一对引号中间的
@@ -75,11 +75,11 @@ build
 如果您有需要导出离线包 (不从 Modrinth 下载文件), 请执行 `offline`, 这会生成一个包含所有需要的整合包文件的完整包
 
 #### 配置开发环境
-借助 ShulkerRRT, 您可以自动部署整合包到版本, 不过需要进行一些小小的配置
+通过配置启动脚本与内置任务, 您可以将整合包自动部署到测试游戏目录并启动客户端:
 
 首先, 您需要安装适合您整合包的 Minecraft 版本(包括 Mod 加载器)
 
-之后找到启动器的 `导出启动脚本` 功能 *(此处以 HMCL 为例, 选中目标版本, 从主页面依次点击 `版本管理 -> 管理 -> 生成启动脚本`)*, 导出为 `.ps1` (PowerShell 脚本格式) 到本仓库内容的 `./shulker/local/client.ps1`
+之后找到启动器的 `导出启动脚本` 功能 *(此处以 HMCL 为例, 选中目标版本, 从主页面依次点击 `版本管理 -> 管理 -> 生成启动脚本`)*, 导出为 `.ps1` (PowerShell 脚本格式) 到本仓库内的 `./shulker/local/client.ps1`
 
 完成后, 打开 `./shulker/tasks/settings.lvt`, 修改其中的 `X:\Path\To\Your\Game` 为您的游戏目录(请注意核对版本隔离情况)
 
@@ -103,17 +103,17 @@ verm show
 verm set 1.0.0
 ```
 
-如果您要继续使用 `x.x.x` 格式的话,还可以使用下面的指令
+如果您要继续使用 `x.y.z` 语义化格式的话,还可以使用下面的指令 (步进高一级版本号时, 低位段会自动归零; 也支持 Shulker 版本格式与预发布后缀, 详见 [verm 指令](../brochure/core/commands.md#verm))
 
-步进修复版本 (`x.x.x.` -> `x.x.x+1`)
+步进修复版本 (`x.y.z` -> `x.y.(z+1)`)
 ```lvt
-verm  sfix
+verm sfix
 ```
-步进小版本 (`x.x.x.` -> `x.x+1.x`)
+步进小版本 (`x.y.z` -> `x.(y+1).0`)
 ```lvt
 verm sminor
 ```
-步进大版本 (`x.x.x.` -> `x+1.x.x`)
+步进大版本 (`x.y.z` -> `(x+1).0.0`)
 ```lvt
 verm smajor
 ```

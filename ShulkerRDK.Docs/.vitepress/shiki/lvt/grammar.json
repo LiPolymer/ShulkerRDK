@@ -71,7 +71,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.lvt",
-					"match": "\\b(run|echo|input|env|copy|delete|sh|flat|verm|netfile|check|path|list|regex|not|ifr|pkgr|mrp|a2ogg|ase|psdcvt|pbrex|rrt|pw|true|false|new)\\b"
+					"match": "\\b(run|echo|input|env|copy|delete|sh|flat|verm|netfile|check|path|list|regex|not|ifr|pkgr|mrp|pfm|a2ogg|ase|psdcvt|pbrex|png2psd|mrvc|rrt|pw|true|false|new)\\b"
 				}
 			]
 		},
@@ -95,7 +95,7 @@
 			"patterns": [
 				{
 					"name": "support.function.lvt",
-					"match": "\\b(get|set|add|a|remove|list|restore|r|serialize|s|export|e|update|u|lock|unlock|clean|smajor|sminor|sfix|remapper|dir|isdir|match|replace|make|tear|zip|tar|start|stop|mono|info|chname|chroot|chout|show|create|lookup|commands|alias)\\b"
+					"match": "\\b(get|set|add|a|remove|list|restore|r|serialize|s|solidify|search|index|f|l|ul|export|e|update|u|lock|unlock|clean|smajor|sminor|sfix|remapper|dir|isdir|match|replace|make|tear|zip|tar|start|stop|mono|info|chname|chroot|chout|show|create|lookup|commands|alias)\\b"
 				}
 			]
 		},
