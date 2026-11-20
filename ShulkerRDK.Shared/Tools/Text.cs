@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -28,13 +29,104 @@ public static partial class Tools {
         return original;
     }
 
+    const string Base36Chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    [GeneratedRegex(@"^([RBADrbad])(\d+)\.([0-9a-zA-Z]{2})(?:fix(\d+))?$")]
+    private static partial Regex ShulkerVersionRegex();
+
+    [GeneratedRegex(@"^(\d+)(.+)$")]
+    private static partial Regex LeadingDigitsRegex();
+
+    [GeneratedRegex(@"^(.*?)(\d+)$")]
+    private static partial Regex TrailingDigitsRegex();
+
     public static string VersionStepper(string input,int depth) {
+        if (string.IsNullOrEmpty(input) || depth < 0) return input;
+
+        Match shulkerMatch = ShulkerVersionRegex().Match(input);
+        if (shulkerMatch.Success) {
+            return StepShulkerVersion(shulkerMatch,input,depth);
+        }
+
         string[] resolved = input.Split('.');
         if (resolved.Length - 1 < depth) return input;
-        int buffer = Convert.ToInt32(resolved[^(depth + 1)]);
-        buffer++;
-        resolved[^(depth + 1)] = buffer.ToString();
+
+        string segment = resolved[^(depth + 1)];
+        string? stepped = StepVersionSegment(segment);
+        if (stepped == null) return input;
+
+        resolved[^(depth + 1)] = stepped;
         return string.Join(".",resolved);
+    }
+
+    static string StepShulkerVersion(Match match,string original,int depth) {
+        string status = match.Groups[1].Value;
+        if (!long.TryParse(match.Groups[2].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out long major)) {
+            return original;
+        }
+        string minor = match.Groups[3].Value.ToLowerInvariant();
+        long fix = 0;
+        if (match.Groups[4].Success &&
+            !long.TryParse(match.Groups[4].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out fix)) {
+            return original;
+        }
+
+        switch (depth) {
+            case 0:
+                return $"{status}{major}.{minor}fix{fix + 1}";
+            case 1:
+                minor = StepShulkerMinor(minor,ref major);
+                return $"{status}{major}.{minor}";
+            case 2:
+                return $"{status}{major + 1}.{minor}";
+            default:
+                return original;
+        }
+    }
+
+    static string StepShulkerMinor(string minor,ref long major) {
+        char c0 = minor[0];
+        char c1 = minor[1];
+
+        if (char.IsAsciiDigit(c0) && char.IsAsciiDigit(c1)) {
+            int val = (c0 - '0') * 10 + (c1 - '0');
+            return val < 99 ? (val + 1).ToString("D2",CultureInfo.InvariantCulture) : "a0";
+        }
+
+        int d0 = Base36Chars.IndexOf(c0);
+        int d1 = Base36Chars.IndexOf(c1);
+        if (d1 + 1 < Base36Chars.Length) {
+            d1++;
+        } else {
+            d1 = 0;
+            if (d0 + 1 < Base36Chars.Length) {
+                d0++;
+            } else {
+                d0 = 0;
+                major++;
+            }
+        }
+        return $"{Base36Chars[d0]}{Base36Chars[d1]}";
+    }
+
+    static string? StepVersionSegment(string segment) {
+        if (long.TryParse(segment,NumberStyles.Integer,CultureInfo.InvariantCulture,out long num)) {
+            return (num + 1).ToString(CultureInfo.InvariantCulture);
+        }
+
+        Match leadingMatch = LeadingDigitsRegex().Match(segment);
+        if (leadingMatch.Success &&
+            long.TryParse(leadingMatch.Groups[1].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out long leadingNum)) {
+            return $"{leadingNum + 1}{leadingMatch.Groups[2].Value}";
+        }
+
+        Match trailingMatch = TrailingDigitsRegex().Match(segment);
+        if (trailingMatch.Success &&
+            long.TryParse(trailingMatch.Groups[2].Value,NumberStyles.Integer,CultureInfo.InvariantCulture,out long trailingNum)) {
+            return $"{trailingMatch.Groups[1].Value}{trailingNum + 1}";
+        }
+
+        return null;
     }
 
     //// Resolver
