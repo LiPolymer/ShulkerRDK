@@ -4,10 +4,8 @@ using System.Reflection;
 namespace ShulkerRDK.Shared;
 
 public static partial class Tools {
-    public static string? GetDescriptionAttribute(dynamic action) {
-        MethodInfo method = action.Method;
-        DescriptionAttribute? descriptionAttribute = method.GetCustomAttribute<DescriptionAttribute>();
-        return descriptionAttribute?.Description;
+    public static string? GetDescriptionAttribute(Delegate action) {
+        return action.Method.GetCustomAttribute<DescriptionAttribute>()?.Description;
     }
 
     public static void DisplayException(Exception e,IChainedLikeTerminal ct,Terminal.MessageType mt = Terminal.MessageType.Critical) {

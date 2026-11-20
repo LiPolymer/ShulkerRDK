@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace ShulkerRDK.Shared;
 
 public static partial class Tools {
@@ -26,12 +28,7 @@ public static partial class Tools {
     }
 
     public static LevitateMethod? TryGetSub(Dictionary<string,LevitateMethod> collection,string[] args,int depth,LevitateExecutionContext ec) {
-        if (!CheckParamLength(args,depth,ec)) return null;
-        if (collection.TryGetValue(args[depth],out LevitateMethod? subM)) {
-            return subM;
-        }
-        DisplayUnknownParam(args,depth,ec);
-        return null;
+        return TryGetSubCore(collection,args,depth,ec.Logger);
     }
 
     public static bool TryGetSub(List<string> collection,string[] args,int depth,LevitateExecutionContext ec) {
@@ -51,9 +48,13 @@ public static partial class Tools {
     }
 
     public static Action<string[]>? TryGetSub(Dictionary<string,Action<string[]>> collection,string[] args,int depth,ChainedTerminal? ct = null) {
+        return TryGetSubCore(collection,args,depth,ct);
+    }
+
+    static TValue? TryGetSubCore<TValue>(Dictionary<string,TValue> collection,string[] args,int depth,IChainedLikeTerminal? ct) where TValue : class {
         if (!CheckParamLength(args,depth,ct)) return null;
-        if (collection.TryGetValue(args[depth],out Action<string[]>? subA)) {
-            return subA;
+        if (collection.TryGetValue(args[depth],out TValue? sub)) {
+            return sub;
         }
         if (ct != null) {
             DisplayUnknownParam(args,depth,ct,collection.Keys.ToList());
@@ -81,11 +82,6 @@ public static partial class Tools {
         ct.WriteLine($"缺少参数&8[{HighLightParam(argList.ToArray(),depth)}&8]",Terminal.MessageType.Error);
     }
 
-    static void DisplayUnknownParam(string[] args,int depth,LevitateExecutionContext ec,List<string>? candidates = null) {
-        ec.Logger.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
-        if (candidates != null) DisplayAvailableCandidates(ec.Logger,candidates);
-    }
-
     static void DisplayUnknownParam(string[] args,int depth,IChainedLikeTerminal ct,List<string>? candidates = null) {
         ct.WriteLine($"未知参数&8[{HighLightParam(args,depth)}&8]",Terminal.MessageType.Error);
         if (candidates != null) DisplayAvailableCandidates(ct,candidates);
@@ -96,13 +92,13 @@ public static partial class Tools {
     }
 
     static string HighLightParam(string[] args,int depth) {
-        string buffer = "&7";
+        StringBuilder buffer = new("&7");
         for (int i = 0; i < args.Length; i++) {
             if (i == depth) {
-                buffer += "&c";
+                buffer.Append("&c");
             }
-            buffer += $"{args[i]}&7 ";
+            buffer.Append(args[i]).Append("&7 ");
         }
-        return buffer.TrimEnd();
+        return buffer.ToString().TrimEnd();
     }
 }
