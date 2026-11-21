@@ -7,6 +7,7 @@
     <img src="https://lipoly.ink/assets/badges/humanity.svg" alt="This project was built by human" width="200">
     <img src="https://lipoly.ink/assets/badges/llmDisclosure.svg" alt="This project contains human-audited ai generated code" width="200">
 </p>
+
 ## Overview
 
 ShulkerRDK is a modular CLI toolkit for Minecraft resource pack and modpack development. It combines an interactive shell, a task scripting DSL (**Levitate Tasks**, `.lvt`), and loadable extensions so you can automate asset conversion, dependency tracking, packaging, and CI/CD builds without keeping bulky binaries in Git.
