@@ -140,9 +140,16 @@ public static class InstanceCommand {
 
     static void HandleUse(string[] args, IChainedLikeTerminal ct) {
         if (!Tools.CheckParamLength(args, 2, ct)) return;
-        string key = args[2].Trim();
+        string raw = args[2].Trim();
+        if (!InstanceService.TryCanonicalizeKey(raw, out string key)) {
+            ct.WriteLine($"&c无效的实例标识&8[&c{raw}&8]", Terminal.MessageType.Error);
+            return;
+        }
         PrismarineConfig.Instance.DefaultInstance = key;
         PrismarineConfig.Instance.Save();
+        if (!string.Equals(raw, key, StringComparison.Ordinal)) {
+            ct.WriteLine($"&e实例标识已规范化&8[&7{raw} &8→ &b{key}&8]", Terminal.MessageType.Warn);
+        }
         ct.WriteLine($"&a已切换默认实例 &8[&b{key}&8]");
         if (!InstanceService.Exists(key)) {
             ct.WriteLine($"&e提示: 实例尚未创建, 可运行 &binst create {key} &e或 &binst ensure {key}", Terminal.MessageType.Warn);
@@ -275,7 +282,7 @@ public static class InstanceCommand {
             return;
         }
 
-        InstanceService.Delete(parsed.Positionals[0], parsed.Yes, ct);
+        InstanceService.Delete(InstanceService.ResolveKey(parsed.Positionals[0]), parsed.Yes, ct);
     }
 
     static string? HandleDir(string[] args, IChainedLikeTerminal ct, bool printToTerminal) {
@@ -323,7 +330,12 @@ public static class InstanceCommand {
 
                 switch (field) {
                     case "instance" or "default":
-                        cfg.DefaultInstance = value.Trim();
+                        if (!InstanceService.TryCanonicalizeKey(value, out string normalizedInstance)) {
+                            ct.WriteLine($"&c无效的实例标识&8[&c{value}&8]", Terminal.MessageType.Error);
+                            return;
+                        }
+                        cfg.DefaultInstance = normalizedInstance;
+                        value = normalizedInstance;
                         break;
                     case "username" or "user":
                         cfg.Launch.Username = value.Trim();

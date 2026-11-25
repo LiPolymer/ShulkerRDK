@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Text.Json;
 using ShulkerRDK.Prismarine.Shared;
 using ShulkerRDK.Shared;
@@ -24,23 +25,41 @@ namespace ShulkerRDK.Prismarine.Services;
 public static class InstanceService {
     static readonly Lock LogLock = new();
 
-    public static string ResolveKey(string? key) =>
-        !string.IsNullOrWhiteSpace(key) ? key.Trim() : PrismarineConfig.Instance.DefaultInstance;
+    public static bool TryCanonicalizeKey(string? rawKey, out string canonicalKey) {
+        canonicalKey = string.Empty;
+        if (string.IsNullOrWhiteSpace(rawKey)) return false;
+
+        string trimmed = rawKey.Trim();
+        if (trimmed is "." or "..") return false;
+
+        string sanitized = FileHelper.Sanitize(trimmed).ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(sanitized)) return false;
+        if (sanitized == "_" && !trimmed.Contains('_')) return false;
+
+        canonicalKey = sanitized;
+        return true;
+    }
+
+    public static string ResolveKey(string? key) {
+        string raw = !string.IsNullOrWhiteSpace(key) ? key : PrismarineConfig.Instance.DefaultInstance;
+        return TryCanonicalizeKey(raw, out string canonical) ? canonical : "dev";
+    }
 
     public static bool Exists(string key) =>
-        TridentServices.ProfileManager.TryGetImmutable(key, out _);
+        TryCanonicalizeKey(key, out string canonical) && TridentServices.ProfileManager.TryGetImmutable(canonical, out _);
 
     public static bool IsRunning(string key) =>
-        TridentServices.InstanceManager.IsInUse(key);
+        TryCanonicalizeKey(key, out string canonical) && TridentServices.InstanceManager.IsInUse(canonical);
 
     public static string? GetDirectory(string kind, string key) {
+        string canonical = ResolveKey(key);
         string? path = kind.ToLowerInvariant() switch {
-            "home" => PathDef.Default.DirectoryOfHome(key),
-            "build" => PathDef.Default.DirectoryOfBuild(key),
-            "import" => PathDef.Default.DirectoryOfImport(key),
-            "persist" => PathDef.Default.DirectoryOfPersist(key),
-            "rp" or "resourcepacks" => Path.Combine(PathDef.Default.DirectoryOfBuild(key), "resourcepacks"),
-            "mods" => Path.Combine(PathDef.Default.DirectoryOfBuild(key), "mods"),
+            "home" => PathDef.Default.DirectoryOfHome(canonical),
+            "build" => PathDef.Default.DirectoryOfBuild(canonical),
+            "import" => PathDef.Default.DirectoryOfImport(canonical),
+            "persist" => PathDef.Default.DirectoryOfPersist(canonical),
+            "rp" or "resourcepacks" => Path.Combine(PathDef.Default.DirectoryOfBuild(canonical), "resourcepacks"),
+            "mods" => Path.Combine(PathDef.Default.DirectoryOfBuild(canonical), "mods"),
             _ => null
         };
         return path != null ? Path.GetFullPath(path) : null;
@@ -52,13 +71,13 @@ public static class InstanceService {
         string? loaderInput,
         string? displayName,
         IChainedLikeTerminal ct) {
-        if (string.IsNullOrWhiteSpace(key)) {
-            ct.WriteLine("&c实例标识不能为空", Terminal.MessageType.Error);
+        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
+            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
             return null;
         }
 
-        if (Exists(key)) {
-            ct.WriteLine($"&c实例已存在&8[&7{key}&8]", Terminal.MessageType.Error);
+        if (Exists(canonicalKey)) {
+            ct.WriteLine($"&c实例已存在&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return null;
         }
 
@@ -80,11 +99,11 @@ public static class InstanceService {
             effectiveLoader = loaderInput ?? template.Setup.Loader;
             name = !string.IsNullOrWhiteSpace(displayName)
                 ? displayName
-                : (!string.IsNullOrWhiteSpace(template.Name) ? template.Name : key);
+                : (!string.IsNullOrWhiteSpace(template.Name) ? template.Name : canonicalKey);
         } else {
             setup = new Profile.Rice { Version = mcVersion.Trim() };
             effectiveLoader = loaderInput;
-            name = !string.IsNullOrWhiteSpace(displayName) ? displayName : key;
+            name = !string.IsNullOrWhiteSpace(displayName) ? displayName : canonicalKey;
         }
 
         string? resolvedLoader;
@@ -103,12 +122,12 @@ public static class InstanceService {
             Setup = setup
         };
 
-        ReservedKey reserved = TridentServices.ProfileManager.RequestKey(key);
+        ReservedKey reserved = TridentServices.ProfileManager.RequestKey(canonicalKey);
         string actualKey = reserved.Key;
         TridentServices.ProfileManager.Add(reserved, profile);
 
-        if (!string.Equals(actualKey, key, StringComparison.Ordinal)) {
-            ct.WriteLine($"&e实例标识已规范化&8[&7{key} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
+        if (!string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
+            ct.WriteLine($"&e实例标识已规范化&8[&7{key.Trim()} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
         }
 
         ct.WriteLine(
@@ -121,17 +140,27 @@ public static class InstanceService {
         string? mcVersion,
         string? loaderInput,
         IChainedLikeTerminal ct) {
-        if (Exists(key)) {
-            ct.WriteLine($"&7实例已就绪 &8[&b{key}&8]");
-            return key;
+        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
+            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+            return null;
         }
 
-        return Create(key, mcVersion, loaderInput, null, ct);
+        if (Exists(canonicalKey)) {
+            ct.WriteLine($"&7实例已就绪 &8[&b{canonicalKey}&8]");
+            return canonicalKey;
+        }
+
+        return Create(canonicalKey, mcVersion, loaderInput, null, ct);
     }
 
     public static string? SyncPack(string packDir, string key, IChainedLikeTerminal ct) {
-        if (Exists(key) && IsRunning(key)) {
-            ct.WriteLine($"&c实例正在运行或部署中, 无法同步整合包&8[&7{key}&8]", Terminal.MessageType.Error);
+        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
+            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+            return null;
+        }
+
+        if (Exists(canonicalKey) && IsRunning(canonicalKey)) {
+            ct.WriteLine($"&c实例正在运行或部署中, 无法同步整合包&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return null;
         }
 
@@ -165,18 +194,21 @@ public static class InstanceService {
             return null;
         }
 
-        string actualKey = key;
-        if (!Exists(key)) {
-            ReservedKey reserved = TridentServices.ProfileManager.RequestKey(key);
+        incoming.Overrides ??= new Dictionary<string, object>();
+
+        string actualKey = canonicalKey;
+        if (!Exists(canonicalKey)) {
+            ReservedKey reserved = TridentServices.ProfileManager.RequestKey(canonicalKey);
             actualKey = reserved.Key;
             TridentServices.ProfileManager.Add(reserved, incoming);
-            if (!string.Equals(actualKey, key, StringComparison.Ordinal)) {
-                ct.WriteLine($"&e实例标识已规范化&8[&7{key} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
+            if (!string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
+                ct.WriteLine($"&e实例标识已规范化&8[&7{key.Trim()} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
             }
         } else {
-            ProfileGuard guard = TridentServices.ProfileManager.GetMutable(key);
+            ProfileGuard guard = TridentServices.ProfileManager.GetMutable(canonicalKey);
             guard.Value.Name = incoming.Name;
             guard.Value.Setup = incoming.Setup;
+            guard.Value.Overrides = new Dictionary<string, object>(incoming.Overrides);
             guard.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
@@ -184,8 +216,10 @@ public static class InstanceService {
         if (Directory.Exists(srcImport)) {
             string destImport = PathDef.Default.DirectoryOfImport(actualKey);
             MirrorStats stats = MirrorDirectory(srcImport, destImport, deleteStale: true);
+            int propagated = PropagateImportChangesToBuild(actualKey, destImport, stats.ChangedRelativePaths);
+            string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
             ct.WriteLine(
-                $"&a已同步整合包 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)} &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}&8)");
+                $"&a已同步整合包 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)} &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}{buildNote}&8)");
         } else {
             ct.WriteLine(
                 $"&a已同步档案 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)}");
@@ -195,13 +229,14 @@ public static class InstanceService {
     }
 
     public static bool SyncImport(string srcDir, string key, bool clean, IChainedLikeTerminal ct) {
-        if (!Exists(key)) {
-            ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
+        string canonicalKey = ResolveKey(key);
+        if (!Exists(canonicalKey)) {
+            ct.WriteLine($"&c实例不存在&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return false;
         }
 
-        if (IsRunning(key)) {
-            ct.WriteLine($"&c实例正在运行或部署中, 无法同步导入目录&8[&7{key}&8]", Terminal.MessageType.Error);
+        if (IsRunning(canonicalKey)) {
+            ct.WriteLine($"&c实例正在运行或部署中, 无法同步导入目录&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return false;
         }
 
@@ -210,28 +245,36 @@ public static class InstanceService {
             return false;
         }
 
-        string destImport = PathDef.Default.DirectoryOfImport(key);
+        string destImport = PathDef.Default.DirectoryOfImport(canonicalKey);
         MirrorStats stats = MirrorDirectory(srcDir, destImport, deleteStale: clean);
+        int propagated = PropagateImportChangesToBuild(canonicalKey, destImport, stats.ChangedRelativePaths);
+        string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
         ct.WriteLine(
-            $"&a已同步导入目录 &8[&b{key}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}" +
-            (clean ? $"&7 / 清理 &7{stats.Deleted}" : "") + "&8)");
+            $"&a已同步导入目录 &8[&b{canonicalKey}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}" +
+            (clean ? $"&7 / 清理 &7{stats.Deleted}" : "") + $"{buildNote}&8)");
         return true;
     }
 
     public static string? SyncResourcePack(string src, string? packName, string key, IChainedLikeTerminal ct) {
-        if (!Exists(key)) {
-            ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
+        string canonicalKey = ResolveKey(key);
+        if (!Exists(canonicalKey)) {
+            ct.WriteLine($"&c实例不存在&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return null;
         }
 
-        string rpRoot = Path.Combine(PathDef.Default.DirectoryOfBuild(key), "resourcepacks");
+        string rpRoot = Path.GetFullPath(Path.Combine(PathDef.Default.DirectoryOfBuild(canonicalKey), "resourcepacks"));
+        if (DeploymentFileHelper.LinkTarget(rpRoot) is not null) {
+            ct.WriteLine($"&c资源包目标目录不允许为符号链接&8[&7{rpRoot}&8]", Terminal.MessageType.Error);
+            return null;
+        }
         Directory.CreateDirectory(rpRoot);
 
         if (File.Exists(src)) {
-            string targetName = !string.IsNullOrWhiteSpace(packName) ? packName.Trim() : Path.GetFileName(src);
-            string destFile = Path.GetFullPath(Path.Combine(rpRoot, targetName));
-            string? parent = Path.GetDirectoryName(destFile);
-            if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+            string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(src);
+            if (!TryResolveSafeChildPath(rpRoot, rawName, out string destFile, out string targetName)) {
+                ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段文件名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
+                return null;
+            }
 
             bool copied = CopyFileIfChanged(src, destFile);
             ct.WriteLine(copied
@@ -242,8 +285,11 @@ public static class InstanceService {
 
         if (Directory.Exists(src)) {
             string trimmedSrc = Path.TrimEndingDirectorySeparator(Path.GetFullPath(src));
-            string targetName = !string.IsNullOrWhiteSpace(packName) ? packName.Trim() : Path.GetFileName(trimmedSrc);
-            string destDir = Path.GetFullPath(Path.Combine(rpRoot, targetName));
+            string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(trimmedSrc);
+            if (!TryResolveSafeChildPath(rpRoot, rawName, out string destDir, out string targetName)) {
+                ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段目录名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
+                return null;
+            }
 
             MirrorStats stats = MirrorDirectory(
                 trimmedSrc,
@@ -261,6 +307,7 @@ public static class InstanceService {
     }
 
     public static bool AddPackage(string key, string pref, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -279,7 +326,6 @@ public static class InstanceService {
 
         if (existing != null) {
             if (string.Equals(existing.Pref, pref, StringComparison.Ordinal) && existing.Enabled) {
-                guard.Discard();
                 ct.WriteLine($"&7包已存在 &8[&b{pref}&8]");
                 return true;
             }
@@ -301,6 +347,7 @@ public static class InstanceService {
     }
 
     public static bool RemovePackage(string key, string prefOrId, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -320,7 +367,6 @@ public static class InstanceService {
         }).ToList();
 
         if (matched.Count == 0) {
-            guard.Discard();
             ct.WriteLine($"&e未找到匹配的包&8[&7{prefOrId}&8]", Terminal.MessageType.Warn);
             return false;
         }
@@ -335,6 +381,7 @@ public static class InstanceService {
     }
 
     public static void ListPackages(string key, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return;
@@ -400,6 +447,7 @@ public static class InstanceService {
     }
 
     public static bool Reset(string key, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -437,6 +485,7 @@ public static class InstanceService {
     }
 
     public static bool Delete(string key, bool confirm, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -485,6 +534,7 @@ public static class InstanceService {
     }
 
     public static bool Deploy(string key, bool fullCheck, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -571,6 +621,7 @@ public static class InstanceService {
         uint? memoryOverride,
         string? usernameOverride,
         IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -596,9 +647,12 @@ public static class InstanceService {
         IReadOnlyList<(uint? Major, string Home)> javaVault = PrismarineConfig.Instance.BuildJavaVault(effectiveJava);
         IAccount account = AccountResolver.ResolveOffline(usernameOverride);
 
+        bool backgroundManaged = mode == LaunchMode.FireAndForget;
+        LaunchMode effectiveMode = backgroundManaged ? LaunchMode.Managed : mode;
+
         LaunchOptions launchOptions = new(
             brand: "ShulkerRDK.Prismarine",
-            launchMode: mode,
+            launchMode: effectiveMode,
             account: account,
             windowSize: (width, height),
             quickConnectAddress: string.IsNullOrWhiteSpace(server) ? null : server,
@@ -606,8 +660,9 @@ public static class InstanceService {
             additionalArguments: additionalArgs,
             commandWrapperTemplate: commandWrapper);
 
+        string modeLabel = backgroundManaged ? "Background (Managed)" : mode.ToString();
         ct.WriteLine(
-            $"&7启动实例 &8[&b{key}&8] &7模式:&b{mode} &7玩家:&b{account.Username} &7内存:&b{maxMemory}MB" +
+            $"&7启动实例 &8[&b{key}&8] &7模式:&b{modeLabel} &7玩家:&b{account.Username} &7内存:&b{maxMemory}MB" +
             (!string.IsNullOrWhiteSpace(server) ? $" &7服务器:&b{server}" : ""));
 
         IObservable<InstanceActivity> activities;
@@ -648,16 +703,33 @@ public static class InstanceService {
 
         Console.CancelKeyPress += cancelHandler;
         try {
+            if (backgroundManaged) {
+                InstanceActivity started = activities
+                    .FirstAsync(x => x.IsCompleted || x is InstanceActivity.Running { ProcessId: not null })
+                    .ToTask()
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (started.State == ActivityState.Faulted) {
+                    throw started.FailureReason ?? new InvalidOperationException("Launch failed");
+                }
+
+                if (started.State == ActivityState.Cancelled) {
+                    ct.WriteLine($"&e启动已取消 &8[&7{key}&8]", Terminal.MessageType.Warn);
+                    return false;
+                }
+
+                int? pid = (started as InstanceActivity.Running)?.ProcessId;
+                string pidText = pid.HasValue ? $"PID &b{pid.Value}&7, " : "";
+                ct.WriteLine($"&a实例已在后台启动 &8[&b{key}&8] &8(&7{pidText}可用 &binst stop {key} &7/ &binst detach {key}&8)");
+                return true;
+            }
+
             InstanceActivity final = TridentServices.WaitForActivityAsync(activities).GetAwaiter().GetResult();
 
             if (mode == LaunchMode.Debug) {
                 string dumpPath = Path.GetFullPath(Path.Combine(PathDef.Default.DirectoryOfBuild(key), "trident.launch.dump.txt"));
                 ct.WriteLine($"&a已生成调试启动转储 &8[&b{dumpPath}&8]");
-                return true;
-            }
-
-            if (mode == LaunchMode.FireAndForget) {
-                ct.WriteLine($"&a实例已在后台启动 &8[&b{key}&8]");
                 return true;
             }
 
@@ -716,6 +788,7 @@ public static class InstanceService {
     }
 
     public static bool Stop(string key, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!IsRunning(key)) {
             ct.WriteLine($"&e实例未在运行&8[&7{key}&8]", Terminal.MessageType.Warn);
             return false;
@@ -727,6 +800,7 @@ public static class InstanceService {
     }
 
     public static bool Detach(string key, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!IsRunning(key)) {
             ct.WriteLine($"&e实例未在运行&8[&7{key}&8]", Terminal.MessageType.Warn);
             return false;
@@ -759,6 +833,7 @@ public static class InstanceService {
     }
 
     public static void ShowInfo(string key, IChainedLikeTerminal ct) {
+        key = ResolveKey(key);
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return;
@@ -819,7 +894,105 @@ public static class InstanceService {
     static string SanitizeForTerminal(string? text) =>
         string.IsNullOrEmpty(text) ? string.Empty : text.Replace('&', '＆');
 
-    readonly record struct MirrorStats(int Copied, int Skipped, int Deleted);
+    readonly record struct MirrorStats(int Copied, int Skipped, int Deleted, IReadOnlyList<string> ChangedRelativePaths);
+
+    static bool TryResolveSafeChildPath(string rootDir, string rawName, out string fullPath, out string safeName) {
+        fullPath = string.Empty;
+        safeName = rawName.Trim();
+
+        if (string.IsNullOrWhiteSpace(safeName) ||
+            safeName is "." or ".." ||
+            Path.IsPathRooted(safeName) ||
+            safeName.Contains('/') ||
+            safeName.Contains('\\') ||
+            safeName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            safeName.EndsWith('.') ||
+            safeName.EndsWith(' ')) {
+            return false;
+        }
+
+        string fullRoot = Path.GetFullPath(rootDir);
+        string candidate = Path.GetFullPath(Path.Combine(fullRoot, safeName));
+        if (!FileHelper.IsInDirectory(candidate, fullRoot) || FileHelper.IsPathEquivalent(candidate, fullRoot)) {
+            return false;
+        }
+
+        if (DeploymentFileHelper.LinkTarget(candidate) is not null) {
+            return false;
+        }
+
+        fullPath = candidate;
+        return true;
+    }
+
+    static int PropagateImportChangesToBuild(string key, string importDir, IReadOnlyList<string> changedRelativePaths) {
+        if (changedRelativePaths.Count == 0) return 0;
+
+        string buildDir = PathDef.Default.DirectoryOfBuild(key);
+        if (!Directory.Exists(buildDir) || DeploymentFileHelper.LinkTarget(buildDir) is not null) return 0;
+
+        string persistDir = PathDef.Default.DirectoryOfPersist(key);
+        HashSet<string> oldPersistPaths = new(FileHelper.PathComparer);
+        try {
+            PersistProjectionManifest persistManifest = ProjectionManifestHelper.ReadPersist(key);
+            foreach (PersistProjectionManifest.FileEntry entry in persistManifest.Files) {
+                oldPersistPaths.Add(ProjectionManifestHelper.ResolveStoredPath(buildDir, entry.Path));
+            }
+        }
+        catch {
+            // 若 persist 清单不存在或不可读，下方仍通过符号链接和 persist 源目录检查保护
+        }
+
+        int updated = 0;
+        foreach (string rel in changedRelativePaths) {
+            if (DeploymentFileHelper.IsOsMetadataFile(Path.GetFileName(rel))) continue;
+
+            string stored = rel.Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+            string live;
+            try {
+                live = ProjectionManifestHelper.ResolveStoredPath(buildDir, stored);
+            }
+            catch {
+                continue;
+            }
+
+            if (ProjectionManifestHelper.IsReservedProjectionPath(buildDir, live)) continue;
+            if (!File.Exists(live)) continue;
+            if (DeploymentFileHelper.HasLinkAtOrAbove(live, buildDir)) continue;
+            if (oldPersistPaths.Contains(live)) continue;
+            if (IsCoveredByPersistSource(persistDir, rel)) continue;
+
+            string importFile = Path.Combine(importDir, rel);
+            if (!File.Exists(importFile)) continue;
+
+            File.Copy(importFile, live, true);
+            try {
+                File.SetLastWriteTimeUtc(live, File.GetLastWriteTimeUtc(importFile));
+            }
+            catch {
+                // 部分文件系统不支持修改时间戳时忽略
+            }
+            updated++;
+        }
+
+        return updated;
+    }
+
+    static bool IsCoveredByPersistSource(string persistDir, string relativePath) {
+        if (!Directory.Exists(persistDir)) return false;
+
+        string candidate = Path.Combine(persistDir, relativePath);
+        if (File.Exists(candidate)) return true;
+
+        string fullPersist = Path.GetFullPath(persistDir);
+        string? current = Path.GetDirectoryName(Path.GetFullPath(candidate));
+        while (current is not null && FileHelper.IsInDirectory(current, fullPersist)) {
+            if (File.Exists(Path.Combine(current, ".keep"))) return true;
+            current = Path.GetDirectoryName(current);
+        }
+
+        return false;
+    }
 
     static MirrorStats MirrorDirectory(
         string srcDir,
@@ -830,6 +1003,7 @@ public static class InstanceService {
 
         int copied = 0, skipped = 0, deleted = 0;
         HashSet<string> sourceRelFiles = new(FileHelper.PathComparer);
+        List<string> changedRelFiles = [];
         HashSet<string>? preserveSet = preserveFileNames != null
             ? new HashSet<string>(preserveFileNames, StringComparer.OrdinalIgnoreCase)
             : null;
@@ -846,6 +1020,7 @@ public static class InstanceService {
 
             if (CopyFileIfChanged(srcFile, destFile)) {
                 copied++;
+                changedRelFiles.Add(rel);
             } else {
                 skipped++;
             }
@@ -872,7 +1047,7 @@ public static class InstanceService {
             }
         }
 
-        return new MirrorStats(copied, skipped, deleted);
+        return new MirrorStats(copied, skipped, deleted, changedRelFiles);
     }
 
     static bool CopyFileIfChanged(string srcFile, string destFile) {

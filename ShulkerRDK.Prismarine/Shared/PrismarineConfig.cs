@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using ShulkerRDK.Shared;
+using TridentCore.Core.Utilities;
 
 namespace ShulkerRDK.Prismarine.Shared;
 
@@ -60,8 +61,10 @@ public class PrismarineConfig {
 
             loaded.Launch ??= new LaunchSettings();
             loaded.Launch.JavaVault ??= [];
-            if (string.IsNullOrWhiteSpace(loaded.DefaultInstance))
-                loaded.DefaultInstance = "dev";
+            string normalizedDefault = string.IsNullOrWhiteSpace(loaded.DefaultInstance)
+                ? "dev"
+                : FileHelper.Sanitize(loaded.DefaultInstance.Trim()).ToLowerInvariant();
+            loaded.DefaultInstance = string.IsNullOrWhiteSpace(normalizedDefault) ? "dev" : normalizedDefault;
 
             return loaded;
         }

@@ -102,7 +102,7 @@ Prismarine 内置轻量级 Minecraft 调试实例管理, 方便在开发整合�
 - **自动 Java 管理**: 部署与启动时默认自动获取 Mojang 官方对应版本的内置 Java 运行时；如需使用本地 JDK, 可用 `inst java scan` 自动扫描或 `inst java set [主版本] <路径>` 手动指定
 - **启动模式**:
   - **默认 (`Managed` 前台托管)**: 在当前终端实时输出游戏日志；按下 `Ctrl+C` 会优雅停止游戏并返回 ShulkerRDK 命令行, **不会退出 ShulkerRDK**
-  - `--bg`: 后台启动 (`FireAndForget`), 立即返回命令行 *(可用 `inst stop` 或 `inst detach` 后续控制)*
+  - `--bg`: 后台托管启动, 进程拉起后立即返回命令行 *(仍受 `InstanceManager` 托管, 可用 `inst stop` 停止或 `inst detach` 解除托管)*
   - `--debug`: 输出启动命令与环境诊断信息 (Launch Dump)
 
 ### `inst` 命令一览
