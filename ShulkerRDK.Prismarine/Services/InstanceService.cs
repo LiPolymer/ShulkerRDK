@@ -40,19 +40,28 @@ public static class InstanceService {
         return true;
     }
 
-    public static string ResolveKey(string? key) {
-        string raw = !string.IsNullOrWhiteSpace(key) ? key : PrismarineConfig.Instance.DefaultInstance;
-        return TryCanonicalizeKey(raw, out string canonical) ? canonical : "dev";
+    public static bool TryResolveKey(string? key, out string canonicalKey, IChainedLikeTerminal? ct = null) {
+        if (key is null) {
+            string defaultKey = PrismarineConfig.Instance.DefaultInstance;
+            if (TryCanonicalizeKey(defaultKey, out canonicalKey)) return true;
+            canonicalKey = "dev";
+            return true;
+        }
+
+        if (TryCanonicalizeKey(key, out canonicalKey)) return true;
+
+        ct?.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+        return false;
     }
 
-    public static bool Exists(string key) =>
-        TryCanonicalizeKey(key, out string canonical) && TridentServices.ProfileManager.TryGetImmutable(canonical, out _);
+    public static bool Exists(string? key) =>
+        TryResolveKey(key, out string canonical) && TridentServices.ProfileManager.TryGetImmutable(canonical, out _);
 
-    public static bool IsRunning(string key) =>
-        TryCanonicalizeKey(key, out string canonical) && TridentServices.InstanceManager.IsInUse(canonical);
+    public static bool IsRunning(string? key) =>
+        TryResolveKey(key, out string canonical) && TridentServices.InstanceManager.IsInUse(canonical);
 
-    public static string? GetDirectory(string kind, string key) {
-        string canonical = ResolveKey(key);
+    public static string? GetDirectory(string kind, string? key) {
+        if (!TryResolveKey(key, out string canonical)) return null;
         string? path = kind.ToLowerInvariant() switch {
             "home" => PathDef.Default.DirectoryOfHome(canonical),
             "build" => PathDef.Default.DirectoryOfBuild(canonical),
@@ -136,12 +145,11 @@ public static class InstanceService {
     }
 
     public static string? Ensure(
-        string key,
+        string? key,
         string? mcVersion,
         string? loaderInput,
         IChainedLikeTerminal ct) {
-        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
-            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+        if (!TryResolveKey(key, out string canonicalKey, ct)) {
             return null;
         }
 
@@ -153,9 +161,8 @@ public static class InstanceService {
         return Create(canonicalKey, mcVersion, loaderInput, null, ct);
     }
 
-    public static string? SyncPack(string packDir, string key, IChainedLikeTerminal ct) {
-        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
-            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+    public static string? SyncPack(string packDir, string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) {
             return null;
         }
 
@@ -201,7 +208,7 @@ public static class InstanceService {
             ReservedKey reserved = TridentServices.ProfileManager.RequestKey(canonicalKey);
             actualKey = reserved.Key;
             TridentServices.ProfileManager.Add(reserved, incoming);
-            if (!string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
+            if (key != null && !string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
                 ct.WriteLine($"&e实例标识已规范化&8[&7{key.Trim()} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
             }
         } else {
@@ -215,11 +222,17 @@ public static class InstanceService {
         string srcImport = Path.Combine(packDir, "import");
         if (Directory.Exists(srcImport)) {
             string destImport = PathDef.Default.DirectoryOfImport(actualKey);
-            MirrorStats stats = MirrorDirectory(srcImport, destImport, deleteStale: true);
-            int propagated = PropagateImportChangesToBuild(actualKey, destImport, stats.ChangedRelativePaths);
-            string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
-            ct.WriteLine(
-                $"&a已同步整合包 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)} &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}{buildNote}&8)");
+            try {
+                MirrorStats stats = MirrorDirectory(srcImport, destImport, deleteStale: true);
+                int propagated = PropagateImportChangesToBuild(actualKey, destImport, stats.ChangedRelativePaths);
+                string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
+                ct.WriteLine(
+                    $"&a已同步整合包 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)} &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}{buildNote}&8)");
+            }
+            catch (Exception ex) {
+                ct.WriteLine($"&c同步导入目录失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
+                return null;
+            }
         } else {
             ct.WriteLine(
                 $"&a已同步档案 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)}");
@@ -228,8 +241,11 @@ public static class InstanceService {
         return actualKey;
     }
 
-    public static bool SyncImport(string srcDir, string key, bool clean, IChainedLikeTerminal ct) {
-        string canonicalKey = ResolveKey(key);
+    public static bool SyncImport(string srcDir, string? key, bool clean, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) {
+            return false;
+        }
+
         if (!Exists(canonicalKey)) {
             ct.WriteLine($"&c实例不存在&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return false;
@@ -246,68 +262,85 @@ public static class InstanceService {
         }
 
         string destImport = PathDef.Default.DirectoryOfImport(canonicalKey);
-        MirrorStats stats = MirrorDirectory(srcDir, destImport, deleteStale: clean);
-        int propagated = PropagateImportChangesToBuild(canonicalKey, destImport, stats.ChangedRelativePaths);
-        string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
-        ct.WriteLine(
-            $"&a已同步导入目录 &8[&b{canonicalKey}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}" +
-            (clean ? $"&7 / 清理 &7{stats.Deleted}" : "") + $"{buildNote}&8)");
-        return true;
+        try {
+            MirrorStats stats = MirrorDirectory(srcDir, destImport, deleteStale: clean);
+            int propagated = PropagateImportChangesToBuild(canonicalKey, destImport, stats.ChangedRelativePaths);
+            string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
+            ct.WriteLine(
+                $"&a已同步导入目录 &8[&b{canonicalKey}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}" +
+                (clean ? $"&7 / 清理 &7{stats.Deleted}" : "") + $"{buildNote}&8)");
+            return true;
+        }
+        catch (Exception ex) {
+            ct.WriteLine($"&c同步导入目录失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
+            return false;
+        }
     }
 
-    public static string? SyncResourcePack(string src, string? packName, string key, IChainedLikeTerminal ct) {
-        string canonicalKey = ResolveKey(key);
+    public static string? SyncResourcePack(string src, string? packName, string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) {
+            return null;
+        }
+
         if (!Exists(canonicalKey)) {
             ct.WriteLine($"&c实例不存在&8[&7{canonicalKey}&8]", Terminal.MessageType.Error);
             return null;
         }
 
-        string rpRoot = Path.GetFullPath(Path.Combine(PathDef.Default.DirectoryOfBuild(canonicalKey), "resourcepacks"));
-        if (DeploymentFileHelper.LinkTarget(rpRoot) is not null) {
-            ct.WriteLine($"&c资源包目标目录不允许为符号链接&8[&7{rpRoot}&8]", Terminal.MessageType.Error);
+        string buildDir = Path.GetFullPath(PathDef.Default.DirectoryOfBuild(canonicalKey));
+        string rpRoot = Path.GetFullPath(Path.Combine(buildDir, "resourcepacks"));
+        if (HasLinkOrReparsePointAtOrAbove(rpRoot, buildDir)) {
+            ct.WriteLine($"&c资源包目标目录或其上级不允许为符号链接或重解析点&8[&7{rpRoot}&8]", Terminal.MessageType.Error);
             return null;
         }
         Directory.CreateDirectory(rpRoot);
 
-        if (File.Exists(src)) {
-            string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(src);
-            if (!TryResolveSafeChildPath(rpRoot, rawName, out string destFile, out string targetName)) {
-                ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段文件名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
-                return null;
+        try {
+            if (File.Exists(src)) {
+                string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(src);
+                if (!TryResolveSafeChildPath(rpRoot, rawName, out string destFile, out string targetName)) {
+                    ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段文件名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
+                    return null;
+                }
+
+                bool copied = CopyFileIfChanged(src, destFile);
+                ct.WriteLine(copied
+                    ? $"&a已同步资源包 &8[&b{targetName}&8 → &7{destFile}&8]"
+                    : $"&7资源包无变更 &8[&b{targetName}&8]");
+                return destFile;
             }
 
-            bool copied = CopyFileIfChanged(src, destFile);
-            ct.WriteLine(copied
-                ? $"&a已同步资源包 &8[&b{targetName}&8 → &7{destFile}&8]"
-                : $"&7资源包无变更 &8[&b{targetName}&8]");
-            return destFile;
+            if (Directory.Exists(src)) {
+                string trimmedSrc = Path.TrimEndingDirectorySeparator(Path.GetFullPath(src));
+                string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(trimmedSrc);
+                if (!TryResolveSafeChildPath(rpRoot, rawName, out string destDir, out string targetName)) {
+                    ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段目录名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
+                    return null;
+                }
+
+                MirrorStats stats = MirrorDirectory(
+                    trimmedSrc,
+                    destDir,
+                    deleteStale: true,
+                    preserveFileNames: ["reload.flag"]);
+
+                ct.WriteLine(
+                    $"&a已同步资源包 &8[&b{targetName}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}&8)");
+                return destDir;
+            }
         }
-
-        if (Directory.Exists(src)) {
-            string trimmedSrc = Path.TrimEndingDirectorySeparator(Path.GetFullPath(src));
-            string rawName = !string.IsNullOrWhiteSpace(packName) ? packName : Path.GetFileName(trimmedSrc);
-            if (!TryResolveSafeChildPath(rpRoot, rawName, out string destDir, out string targetName)) {
-                ct.WriteLine($"&c非法的资源包名称(必须为 resourcepacks 内的安全单段目录名)&8[&c{SanitizeForTerminal(rawName)}&8]", Terminal.MessageType.Error);
-                return null;
-            }
-
-            MirrorStats stats = MirrorDirectory(
-                trimmedSrc,
-                destDir,
-                deleteStale: true,
-                preserveFileNames: ["reload.flag"]);
-
-            ct.WriteLine(
-                $"&a已同步资源包 &8[&b{targetName}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}&8)");
-            return destDir;
+        catch (Exception ex) {
+            ct.WriteLine($"&c同步资源包失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
+            return null;
         }
 
         ct.WriteLine($"&c资源包源路径不存在&8[&7{src}&8]", Terminal.MessageType.Error);
         return null;
     }
 
-    public static bool AddPackage(string key, string pref, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool AddPackage(string? key, string pref, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -346,8 +379,9 @@ public static class InstanceService {
         return true;
     }
 
-    public static bool RemovePackage(string key, string prefOrId, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool RemovePackage(string? key, string prefOrId, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -380,8 +414,9 @@ public static class InstanceService {
         return true;
     }
 
-    public static void ListPackages(string key, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static void ListPackages(string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return;
@@ -403,6 +438,15 @@ public static class InstanceService {
     }
 
     public static string? ImportPack(string packFile, string? key, IChainedLikeTerminal ct) {
+        string? explicitCanonicalKey = null;
+        if (key is not null) {
+            if (!TryCanonicalizeKey(key, out string parsedKey)) {
+                ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+                return null;
+            }
+            explicitCanonicalKey = parsedKey;
+        }
+
         string sourcePath = Path.GetFullPath(packFile);
         if (!File.Exists(sourcePath)) {
             ct.WriteLine($"&c整合包文件不存在&8[&7{sourcePath}&8]", Terminal.MessageType.Error);
@@ -420,9 +464,8 @@ public static class InstanceService {
             using CompressedProfilePack pack = new(memory);
             ImportedProfileContainer container = TridentServices.ImporterAgent.ImportAsync(pack).GetAwaiter().GetResult();
 
-            string requestedKey = !string.IsNullOrWhiteSpace(key)
-                ? key.Trim()
-                : (!string.IsNullOrWhiteSpace(container.Profile.Name)
+            string requestedKey = explicitCanonicalKey
+                ?? (!string.IsNullOrWhiteSpace(container.Profile.Name)
                     ? container.Profile.Name
                     : Path.GetFileNameWithoutExtension(sourcePath));
 
@@ -432,8 +475,8 @@ public static class InstanceService {
             TridentServices.ImporterAgent.ExtractFilesAsync(actualKey, container, pack).GetAwaiter().GetResult();
             TridentServices.ProfileManager.Add(reserved, container.Profile);
 
-            if (!string.IsNullOrWhiteSpace(key) && !string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
-                ct.WriteLine($"&e实例标识已规范化&8[&7{key} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
+            if (key is not null && !string.Equals(actualKey, key.Trim(), StringComparison.Ordinal)) {
+                ct.WriteLine($"&e实例标识已规范化&8[&7{key.Trim()} &8→ &b{actualKey}&8]", Terminal.MessageType.Warn);
             }
 
             ct.WriteLine(
@@ -446,8 +489,9 @@ public static class InstanceService {
         }
     }
 
-    public static bool Reset(string key, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool Reset(string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -485,7 +529,11 @@ public static class InstanceService {
     }
 
     public static bool Delete(string key, bool confirm, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+        if (!TryCanonicalizeKey(key, out string canonicalKey)) {
+            ct.WriteLine($"&c无效的实例标识&8[&c{SanitizeForTerminal(key)}&8]", Terminal.MessageType.Error);
+            return false;
+        }
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -533,8 +581,9 @@ public static class InstanceService {
         }
     }
 
-    public static bool Deploy(string key, bool fullCheck, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool Deploy(string? key, bool fullCheck, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -614,14 +663,15 @@ public static class InstanceService {
     }
 
     public static bool Launch(
-        string key,
+        string? key,
         LaunchMode mode,
         string? serverOverride,
         string? javaHomeOverride,
         uint? memoryOverride,
         string? usernameOverride,
         IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return false;
@@ -775,7 +825,7 @@ public static class InstanceService {
     }
 
     public static bool Run(
-        string key,
+        string? key,
         LaunchMode mode,
         bool fullCheck,
         string? serverOverride,
@@ -783,12 +833,14 @@ public static class InstanceService {
         uint? memoryOverride,
         string? usernameOverride,
         IChainedLikeTerminal ct) {
-        if (!Deploy(key, fullCheck, ct)) return false;
-        return Launch(key, mode, serverOverride, javaHomeOverride, memoryOverride, usernameOverride, ct);
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        if (!Deploy(canonicalKey, fullCheck, ct)) return false;
+        return Launch(canonicalKey, mode, serverOverride, javaHomeOverride, memoryOverride, usernameOverride, ct);
     }
 
-    public static bool Stop(string key, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool Stop(string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!IsRunning(key)) {
             ct.WriteLine($"&e实例未在运行&8[&7{key}&8]", Terminal.MessageType.Warn);
             return false;
@@ -799,8 +851,9 @@ public static class InstanceService {
         return true;
     }
 
-    public static bool Detach(string key, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static bool Detach(string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return false;
+        key = canonicalKey;
         if (!IsRunning(key)) {
             ct.WriteLine($"&e实例未在运行&8[&7{key}&8]", Terminal.MessageType.Warn);
             return false;
@@ -832,8 +885,9 @@ public static class InstanceService {
         }
     }
 
-    public static void ShowInfo(string key, IChainedLikeTerminal ct) {
-        key = ResolveKey(key);
+    public static void ShowInfo(string? key, IChainedLikeTerminal ct) {
+        if (!TryResolveKey(key, out string canonicalKey, ct)) return;
+        key = canonicalKey;
         if (!Exists(key)) {
             ct.WriteLine($"&c实例不存在&8[&7{key}&8]", Terminal.MessageType.Error);
             return;
@@ -912,17 +966,115 @@ public static class InstanceService {
         }
 
         string fullRoot = Path.GetFullPath(rootDir);
+        if (IsReparsePointOrLink(fullRoot)) {
+            return false;
+        }
+
         string candidate = Path.GetFullPath(Path.Combine(fullRoot, safeName));
         if (!FileHelper.IsInDirectory(candidate, fullRoot) || FileHelper.IsPathEquivalent(candidate, fullRoot)) {
             return false;
         }
 
-        if (DeploymentFileHelper.LinkTarget(candidate) is not null) {
+        if (IsReparsePointOrLink(candidate)) {
             return false;
         }
 
         fullPath = candidate;
         return true;
+    }
+
+    static bool IsReparsePointOrLink(FileSystemInfo info) =>
+        info.LinkTarget is not null || (info.Exists && (info.Attributes & FileAttributes.ReparsePoint) != 0);
+
+    static bool IsReparsePointOrLink(string path) {
+        if (Directory.Exists(path)) return IsReparsePointOrLink(new DirectoryInfo(path));
+        if (File.Exists(path)) return IsReparsePointOrLink(new FileInfo(path));
+
+        try {
+            FileInfo fi = new(path);
+            return fi.LinkTarget is not null ||
+                   (fi.Attributes != (FileAttributes)(-1) && (fi.Attributes & FileAttributes.ReparsePoint) != 0);
+        }
+        catch {
+            return false;
+        }
+    }
+
+    static bool HasLinkOrReparsePointAtOrAbove(string path, string rootDir) {
+        string fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootDir));
+        string? current = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+
+        while (current is not null) {
+            if (IsReparsePointOrLink(current)) return true;
+            if (FileHelper.IsPathEquivalent(current, fullRoot)) return false;
+            if (!FileHelper.IsInDirectory(current, fullRoot)) return true;
+            current = Path.GetDirectoryName(current);
+        }
+
+        return true;
+    }
+
+    static void EnsureNoNestedReparsePoints(string rootDir) {
+        string fullRoot = Path.GetFullPath(rootDir);
+        if (IsReparsePointOrLink(fullRoot)) {
+            throw new InvalidDataException($"目标根目录不允许为符号链接或重解析点: {fullRoot}");
+        }
+
+        if (!Directory.Exists(fullRoot)) return;
+
+        Stack<DirectoryInfo> pending = new();
+        pending.Push(new DirectoryInfo(fullRoot));
+        while (pending.TryPop(out DirectoryInfo? dir)) {
+            foreach (FileSystemInfo entry in dir.EnumerateFileSystemInfos()) {
+                if (IsReparsePointOrLink(entry)) {
+                    throw new InvalidDataException($"目标目录内不允许存在符号链接或重解析点: {entry.FullName}");
+                }
+
+                if (entry is DirectoryInfo subDir) {
+                    pending.Push(subDir);
+                }
+            }
+        }
+    }
+
+    static void EnsureRealDirectoryChain(string rootDir, string targetDir) {
+        string fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootDir));
+        string fullTarget = Path.TrimEndingDirectorySeparator(Path.GetFullPath(targetDir));
+
+        if (!FileHelper.IsPathEquivalent(fullTarget, fullRoot) && !FileHelper.IsInDirectory(fullTarget, fullRoot)) {
+            throw new InvalidDataException($"目标路径超出允许范围: {fullTarget}");
+        }
+
+        if (IsReparsePointOrLink(fullRoot)) {
+            throw new InvalidDataException($"目标根目录不允许为符号链接或重解析点: {fullRoot}");
+        }
+
+        if (!Directory.Exists(fullRoot)) {
+            Directory.CreateDirectory(fullRoot);
+        }
+
+        if (FileHelper.IsPathEquivalent(fullTarget, fullRoot)) return;
+
+        string relative = Path.GetRelativePath(fullRoot, fullTarget);
+        string current = fullRoot;
+        foreach (string segment in relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries)) {
+            current = Path.Combine(current, segment);
+            if (!FileHelper.IsInDirectory(current, fullRoot)) {
+                throw new InvalidDataException($"目标路径超出允许范围: {current}");
+            }
+
+            if (IsReparsePointOrLink(current)) {
+                throw new InvalidDataException($"目标祖先目录不允许为符号链接或重解析点: {current}");
+            }
+
+            if (File.Exists(current)) {
+                throw new InvalidDataException($"目标目录路径被文件占用: {current}");
+            }
+
+            if (!Directory.Exists(current)) {
+                Directory.CreateDirectory(current);
+            }
+        }
     }
 
     static int PropagateImportChangesToBuild(string key, string importDir, IReadOnlyList<string> changedRelativePaths) {
@@ -999,7 +1151,20 @@ public static class InstanceService {
         string destDir,
         bool deleteStale,
         IReadOnlyCollection<string>? preserveFileNames = null) {
-        Directory.CreateDirectory(destDir);
+        string fullSrcRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(srcDir));
+        string fullDestRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destDir));
+
+        if (IsReparsePointOrLink(fullSrcRoot)) {
+            throw new InvalidDataException($"源根目录不允许为符号链接或重解析点: {fullSrcRoot}");
+        }
+
+        if (File.Exists(fullDestRoot)) {
+            throw new InvalidDataException($"目标目录路径被文件占用: {fullDestRoot}");
+        }
+
+        // 先对目标子树做非跟随预检，存在任何符号链接/junction 时直接拒绝，不执行任何写入或删除。
+        EnsureNoNestedReparsePoints(fullDestRoot);
+        EnsureRealDirectoryChain(fullDestRoot, fullDestRoot);
 
         int copied = 0, skipped = 0, deleted = 0;
         HashSet<string> sourceRelFiles = new(FileHelper.PathComparer);
@@ -1008,41 +1173,96 @@ public static class InstanceService {
             ? new HashSet<string>(preserveFileNames, StringComparer.OrdinalIgnoreCase)
             : null;
 
-        foreach (string srcFile in Directory.EnumerateFiles(srcDir, "*", SearchOption.AllDirectories)) {
-            string rel = Path.GetRelativePath(srcDir, srcFile);
-            sourceRelFiles.Add(rel);
+        // 显式栈遍历源目录（拒绝跟随符号链接/junction）
+        Stack<DirectoryInfo> srcPending = new();
+        srcPending.Push(new DirectoryInfo(fullSrcRoot));
+        while (srcPending.TryPop(out DirectoryInfo? curSrcDir)) {
+            foreach (FileSystemInfo entry in curSrcDir.EnumerateFileSystemInfos()) {
+                if (IsReparsePointOrLink(entry)) {
+                    throw new InvalidDataException($"源目录内不允许包含符号链接或重解析点: {entry.FullName}");
+                }
 
-            string destFile = Path.Combine(destDir, rel);
-            string? parent = Path.GetDirectoryName(destFile);
-            if (!string.IsNullOrEmpty(parent) && !Directory.Exists(parent)) {
-                Directory.CreateDirectory(parent);
-            }
+                if (entry is DirectoryInfo subSrcDir) {
+                    srcPending.Push(subSrcDir);
+                    continue;
+                }
 
-            if (CopyFileIfChanged(srcFile, destFile)) {
-                copied++;
-                changedRelFiles.Add(rel);
-            } else {
-                skipped++;
+                if (entry is not FileInfo srcFileInfo) continue;
+
+                string rel = Path.GetRelativePath(fullSrcRoot, srcFileInfo.FullName);
+                sourceRelFiles.Add(rel);
+
+                string destFile = Path.GetFullPath(Path.Combine(fullDestRoot, rel));
+                if (!FileHelper.IsInDirectory(destFile, fullDestRoot)) {
+                    throw new InvalidDataException($"目标文件路径超出允许范围: {destFile}");
+                }
+
+                string? parent = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(parent)) {
+                    EnsureRealDirectoryChain(fullDestRoot, parent);
+                }
+
+                if (HasLinkOrReparsePointAtOrAbove(destFile, fullDestRoot)) {
+                    throw new InvalidDataException($"目标文件或其祖先不允许为符号链接或重解析点: {destFile}");
+                }
+
+                if (CopyFileIfChanged(srcFileInfo.FullName, destFile)) {
+                    copied++;
+                    changedRelFiles.Add(rel);
+                } else {
+                    skipped++;
+                }
             }
         }
 
         if (deleteStale) {
-            foreach (string destFile in Directory.EnumerateFiles(destDir, "*", SearchOption.AllDirectories).ToList()) {
-                string rel = Path.GetRelativePath(destDir, destFile);
-                if (sourceRelFiles.Contains(rel)) continue;
-                if (preserveSet != null && preserveSet.Contains(Path.GetFileName(destFile))) continue;
+            // 显式栈遍历目标目录（绝不使用 SearchOption.AllDirectories 跟随目录链接/junction）
+            List<FileInfo> filesToDelete = [];
+            List<DirectoryInfo> visitedSubDirs = [];
+            Stack<DirectoryInfo> destPending = new();
+            destPending.Push(new DirectoryInfo(fullDestRoot));
 
-                File.Delete(destFile);
+            while (destPending.TryPop(out DirectoryInfo? curDestDir)) {
+                foreach (FileSystemInfo entry in curDestDir.EnumerateFileSystemInfos()) {
+                    if (IsReparsePointOrLink(entry)) {
+                        throw new InvalidDataException($"目标目录内不允许存在符号链接或重解析点: {entry.FullName}");
+                    }
+
+                    if (entry is DirectoryInfo subDestDir) {
+                        visitedSubDirs.Add(subDestDir);
+                        destPending.Push(subDestDir);
+                        continue;
+                    }
+
+                    if (entry is not FileInfo destFileInfo) continue;
+
+                    string rel = Path.GetRelativePath(fullDestRoot, destFileInfo.FullName);
+                    if (sourceRelFiles.Contains(rel)) continue;
+                    if (preserveSet != null && preserveSet.Contains(destFileInfo.Name)) continue;
+
+                    filesToDelete.Add(destFileInfo);
+                }
+            }
+
+            foreach (FileInfo destFileInfo in filesToDelete) {
+                if (!FileHelper.IsInDirectory(destFileInfo.FullName, fullDestRoot) ||
+                    HasLinkOrReparsePointAtOrAbove(destFileInfo.FullName, fullDestRoot)) {
+                    throw new InvalidDataException($"拒绝删除越界或经由链接可达的文件: {destFileInfo.FullName}");
+                }
+
+                File.Delete(destFileInfo.FullName);
                 deleted++;
             }
 
-            // 自底向上清理空目录
-            List<string> subDirs = Directory.EnumerateDirectories(destDir, "*", SearchOption.AllDirectories)
-                .OrderByDescending(d => d.Length)
-                .ToList();
-            foreach (string dir in subDirs) {
-                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any()) {
-                    Directory.Delete(dir, false);
+            // 自底向上清理空目录（逐项确认非链接且位于目标根内）
+            foreach (DirectoryInfo dir in visitedSubDirs.OrderByDescending(d => d.FullName.Length)) {
+                if (!FileHelper.IsInDirectory(dir.FullName, fullDestRoot) ||
+                    HasLinkOrReparsePointAtOrAbove(dir.FullName, fullDestRoot)) {
+                    continue;
+                }
+
+                if (Directory.Exists(dir.FullName) && !dir.EnumerateFileSystemInfos().Any()) {
+                    Directory.Delete(dir.FullName, false);
                 }
             }
         }
@@ -1051,14 +1271,18 @@ public static class InstanceService {
     }
 
     static bool CopyFileIfChanged(string srcFile, string destFile) {
+        if (IsReparsePointOrLink(srcFile)) {
+            throw new InvalidDataException($"源文件不允许为符号链接或重解析点: {srcFile}");
+        }
+
         FileInfo srcInfo = new(srcFile);
-        if (File.Exists(destFile)) {
+        if (File.Exists(destFile) || IsReparsePointOrLink(destFile)) {
+            if (IsReparsePointOrLink(destFile)) {
+                throw new InvalidDataException($"目标文件不允许为符号链接或重解析点: {destFile}");
+            }
+
             FileInfo destInfo = new(destFile);
-            // 若目标为符号链接，先删除再复制为普通文件（TridentCore 禁止 import/ 中包含符号链接）
-            if (destInfo.LinkTarget != null) {
-                File.Delete(destFile);
-            } else if (srcInfo.Length == destInfo.Length &&
-                       Math.Abs((srcInfo.LastWriteTimeUtc - destInfo.LastWriteTimeUtc).TotalSeconds) < 1.0) {
+            if (srcInfo.Length == destInfo.Length && FilesHaveEqualContent(srcFile, destFile)) {
                 return false;
             }
         }
@@ -1069,6 +1293,30 @@ public static class InstanceService {
         }
         catch {
             // 部分文件系统不支持修改时间戳时忽略
+        }
+
+        return true;
+    }
+
+    static bool FilesHaveEqualContent(string leftPath, string rightPath) {
+        const int bufferSize = 64 * 1024;
+        using FileStream left = new(leftPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan);
+        using FileStream right = new(rightPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan);
+
+        if (left.Length != right.Length) return false;
+
+        byte[] leftBuffer = new byte[bufferSize];
+        byte[] rightBuffer = new byte[bufferSize];
+        long remaining = left.Length;
+
+        while (remaining > 0) {
+            int toRead = (int)Math.Min(bufferSize, remaining);
+            left.ReadExactly(leftBuffer.AsSpan(0, toRead));
+            right.ReadExactly(rightBuffer.AsSpan(0, toRead));
+            if (!leftBuffer.AsSpan(0, toRead).SequenceEqual(rightBuffer.AsSpan(0, toRead))) {
+                return false;
+            }
+            remaining -= toRead;
         }
 
         return true;

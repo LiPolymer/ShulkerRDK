@@ -44,7 +44,7 @@ public static class InstanceCommand {
                 InstanceService.ListInstances(ct);
                 break;
             case "info" or "i":
-                InstanceService.ShowInfo(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct);
+                InstanceService.ShowInfo(args.Length > 2 ? args[2] : null, ct);
                 break;
             case "use":
                 HandleUse(args, ct);
@@ -65,16 +65,16 @@ public static class InstanceCommand {
                 HandleRun(args, ct);
                 break;
             case "stop":
-                InstanceService.Stop(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct);
+                InstanceService.Stop(args.Length > 2 ? args[2] : null, ct);
                 break;
             case "detach":
-                InstanceService.Detach(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct);
+                InstanceService.Detach(args.Length > 2 ? args[2] : null, ct);
                 break;
             case "import":
                 HandleImport(args, ct);
                 break;
             case "reset":
-                InstanceService.Reset(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct);
+                InstanceService.Reset(args.Length > 2 ? args[2] : null, ct);
                 break;
             case "delete" or "rm":
                 HandleDelete(args, ct);
@@ -111,13 +111,13 @@ public static class InstanceCommand {
             "deploy" => HandleDeploy(args, ct) ? "true" : "false",
             "launch" => HandleLaunch(args, ct) ? "true" : "false",
             "run" => HandleRun(args, ct) ? "true" : "false",
-            "stop" => InstanceService.Stop(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct) ? "true" : "false",
-            "detach" => InstanceService.Detach(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct) ? "true" : "false",
+            "stop" => InstanceService.Stop(args.Length > 2 ? args[2] : null, ct) ? "true" : "false",
+            "detach" => InstanceService.Detach(args.Length > 2 ? args[2] : null, ct) ? "true" : "false",
             "import" => HandleImport(args, ct),
-            "reset" => InstanceService.Reset(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null), ct) ? "true" : "false",
+            "reset" => InstanceService.Reset(args.Length > 2 ? args[2] : null, ct) ? "true" : "false",
             "dir" => HandleDir(args, ct, printToTerminal: false),
-            "exists" => InstanceService.Exists(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null)) ? "true" : "false",
-            "running" => InstanceService.IsRunning(InstanceService.ResolveKey(args.Length > 2 ? args[2] : null)) ? "true" : "false",
+            "exists" => InstanceService.Exists(args.Length > 2 ? args[2] : null) ? "true" : "false",
+            "running" => InstanceService.IsRunning(args.Length > 2 ? args[2] : null) ? "true" : "false",
             "current" => PrismarineConfig.Instance.DefaultInstance,
             _ => null
         };
@@ -132,7 +132,7 @@ public static class InstanceCommand {
     }
 
     static string? HandleEnsure(string[] args, IChainedLikeTerminal ct) {
-        string key = InstanceService.ResolveKey(args.Length > 2 ? args[2] : null);
+        string? key = args.Length > 2 ? args[2] : null;
         string? mcVer = args.Length > 3 ? args[3] : null;
         string? loader = args.Length > 4 ? args[4] : null;
         return InstanceService.Ensure(key, mcVer, loader, ct);
@@ -167,7 +167,8 @@ public static class InstanceCommand {
             }
 
             string srcDir = parsed.Positionals[0];
-            string key = InstanceService.ResolveKey(parsed.Positionals.Count > 1 ? parsed.Positionals[1] : null);
+            if (!InstanceService.TryResolveKey(parsed.Positionals.Count > 1 ? parsed.Positionals[1] : null, out string key, ct))
+                return null;
             return InstanceService.SyncImport(srcDir, key, parsed.Clean, ct) ? key : null;
         }
 
@@ -180,8 +181,8 @@ public static class InstanceCommand {
 
             string src = parsed.Positionals[0];
             string? packName = parsed.Positionals.Count > 1 ? parsed.Positionals[1] : null;
-            string key = InstanceService.ResolveKey(parsed.Positionals.Count > 2 ? parsed.Positionals[2] : null);
-            return InstanceService.SyncResourcePack(src, packName, key, ct);
+            string? rawKey = parsed.Positionals.Count > 2 ? parsed.Positionals[2] : null;
+            return InstanceService.SyncResourcePack(src, packName, rawKey, ct);
         }
 
         if (!TryParseFlags(args, 2, ct, out ParsedArgs packParsed)) return null;
@@ -191,7 +192,7 @@ public static class InstanceCommand {
         }
 
         string packDir = packParsed.Positionals[0];
-        string targetKey = InstanceService.ResolveKey(packParsed.Positionals.Count > 1 ? packParsed.Positionals[1] : null);
+        string? targetKey = packParsed.Positionals.Count > 1 ? packParsed.Positionals[1] : null;
         return InstanceService.SyncPack(packDir, targetKey, ct);
     }
 
@@ -201,33 +202,32 @@ public static class InstanceCommand {
         switch (args[2]) {
             case "add": {
                 if (!Tools.CheckParamLength(args, 3, ct)) return null;
-                string key;
+                string? key;
                 string pref;
                 if (args.Length == 4) {
-                    key = InstanceService.ResolveKey(null);
+                    key = null;
                     pref = args[3];
                 } else {
-                    key = InstanceService.ResolveKey(args[3]);
+                    key = args[3];
                     pref = args[4];
                 }
                 return InstanceService.AddPackage(key, pref, ct) ? "true" : "false";
             }
             case "remove" or "rm": {
                 if (!Tools.CheckParamLength(args, 3, ct)) return null;
-                string key;
+                string? key;
                 string target;
                 if (args.Length == 4) {
-                    key = InstanceService.ResolveKey(null);
+                    key = null;
                     target = args[3];
                 } else {
-                    key = InstanceService.ResolveKey(args[3]);
+                    key = args[3];
                     target = args[4];
                 }
                 return InstanceService.RemovePackage(key, target, ct) ? "true" : "false";
             }
             case "list" or "ls": {
-                string key = InstanceService.ResolveKey(args.Length > 3 ? args[3] : null);
-                InstanceService.ListPackages(key, ct);
+                InstanceService.ListPackages(args.Length > 3 ? args[3] : null, ct);
                 return null;
             }
         }
@@ -237,13 +237,13 @@ public static class InstanceCommand {
 
     static bool HandleDeploy(string[] args, IChainedLikeTerminal ct) {
         if (!TryParseFlags(args, 2, ct, out ParsedArgs parsed)) return false;
-        string key = InstanceService.ResolveKey(parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null);
+        string? key = parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null;
         return InstanceService.Deploy(key, parsed.FullCheck, ct);
     }
 
     static bool HandleLaunch(string[] args, IChainedLikeTerminal ct) {
         if (!TryParseFlags(args, 2, ct, out ParsedArgs parsed)) return false;
-        string key = InstanceService.ResolveKey(parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null);
+        string? key = parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null;
         return InstanceService.Launch(
             key,
             parsed.Mode,
@@ -256,7 +256,7 @@ public static class InstanceCommand {
 
     static bool HandleRun(string[] args, IChainedLikeTerminal ct) {
         if (!TryParseFlags(args, 2, ct, out ParsedArgs parsed)) return false;
-        string key = InstanceService.ResolveKey(parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null);
+        string? key = parsed.Positionals.Count > 0 ? parsed.Positionals[0] : null;
         return InstanceService.Run(
             key,
             parsed.Mode,
@@ -282,13 +282,13 @@ public static class InstanceCommand {
             return;
         }
 
-        InstanceService.Delete(InstanceService.ResolveKey(parsed.Positionals[0]), parsed.Yes, ct);
+        InstanceService.Delete(parsed.Positionals[0], parsed.Yes, ct);
     }
 
     static string? HandleDir(string[] args, IChainedLikeTerminal ct, bool printToTerminal) {
         if (!Tools.CheckParamLength(args, 2, ct)) return null;
         string kind = args[2];
-        string key = InstanceService.ResolveKey(args.Length > 3 ? args[3] : null);
+        if (!InstanceService.TryResolveKey(args.Length > 3 ? args[3] : null, out string key, ct)) return null;
         string? dir = InstanceService.GetDirectory(kind, key);
         if (dir == null) {
             ct.WriteLine($"&c未知目录类型&8[&c{kind}&8] &7可用项&8[&7home, build, import, persist, rp, mods&8]", Terminal.MessageType.Error);
