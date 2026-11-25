@@ -82,7 +82,7 @@ public static class PfManager {
                 if (!Tools.CheckParamLength(args,2,ct)) return;
                 string? sVer = Tools.CheckParamLength(args,3) ? args[3] : null;
                 string? sLoader = Tools.CheckParamLength(args,4) ? args[4] : null;
-                Search(args[2],new Filter(Version: sVer,Loader: sLoader,Kind: null),ct);
+                Search(args[2],new Filter(Version: sVer,Loader: LoaderResolver.ToFilterLoader(sLoader),Kind: null,Type: null),ct);
                 break;
             case "serialize" or "s":
                 if (Tools.CheckParamLength(args,2)) path = args[2];
