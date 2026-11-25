@@ -1,16 +1,20 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ShulkerRDK.Prismarine.Shared;
 using TridentCore.Abstractions;
 using TridentCore.Abstractions.Exporters;
 using TridentCore.Abstractions.Importers;
 using TridentCore.Abstractions.Tasks;
+using TridentCore.Core.Engines.Deploying;
 using TridentCore.Core.Exporters;
 using TridentCore.Core.Extensions;
 using TridentCore.Core.Importers;
 using TridentCore.Core.Lifetimes;
 using TridentCore.Core.Services;
 using TridentCore.Core.Services.Instances;
-using TridentCore.Core.Utilities;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace ShulkerRDK.Prismarine.Services;
@@ -19,6 +23,8 @@ public static class TridentServices {
     static ServiceProvider? _provider;
     static LifetimeServiceRuntime? _lifetime;
 
+    public static string TridentHomePath { get; private set; } = string.Empty;
+
     public static IServiceProvider Provider => _provider ?? throw new InvalidOperationException("TridentServices not initialized");
 
     public static T Get<T>() where T : notnull => Provider.GetRequiredService<T>();
@@ -26,8 +32,31 @@ public static class TridentServices {
     public static void Initialize(string? curseForgeApiKey = null) {
         if (_provider != null) throw new InvalidOperationException("Already initialized");
 
+        TridentHomePath = PrepareTridentHome();
+        InitializeCore(curseForgeApiKey);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static string PrepareTridentHome() {
+        string? existing = Environment.GetEnvironmentVariable("TRIDENT_HOME");
+        if (!string.IsNullOrWhiteSpace(existing))
+            return existing;
+
+        string isolated = Path.GetFullPath("./shulker/local/trident");
+        Environment.SetEnvironmentVariable("TRIDENT_HOME", isolated);
+        return isolated;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void InitializeCore(string? curseForgeApiKey) {
+        PathDef.BrandNames = new("shulker.prismarine", "ShulkerRDK.Prismarine", "ink.lipoly.shulker.prismarine");
+
         if (!Directory.Exists(PathDef.Default.InstanceDirectory)) Directory.CreateDirectory(PathDef.Default.InstanceDirectory);
         if (!Directory.Exists(PathDef.Default.CacheDirectory)) Directory.CreateDirectory(PathDef.Default.CacheDirectory);
+
+        string? effectiveCfKey = !string.IsNullOrWhiteSpace(curseForgeApiKey)
+            ? curseForgeApiKey
+            : PrismarineConfig.Instance.CurseForgeApiKey;
 
         ServiceCollection services = new ServiceCollection();
 
@@ -47,35 +76,39 @@ public static class TridentServices {
             .AddXboxLive()
             .AddMinecraft()
             .AddMclogs()
+            .AddAuthlibInjector()
+            .AddYggdrasil()
+            .AddAccountConfigurers()
             .AddRepositoryInfrastructure()
             .AddLifetimeRuntime();
 
-        services.AddTransient<IProfileImporter,TridentImporter>();
-        services.AddTransient<IProfileImporter,CurseForgeImporter>();
-        services.AddTransient<IProfileImporter,ModrinthImporter>();
-        services.AddTransient<IProfileExporter,TridentExporter>();
-        services.AddTransient<IProfileExporter,CurseForgeExporter>();
-        services.AddTransient<IProfileExporter,ModrinthExporter>();
+        services.AddTransient<IProfileImporter, TridentImporter>();
+        services.AddTransient<IProfileImporter, CurseForgeImporter>();
+        services.AddTransient<IProfileImporter, ModrinthImporter>();
+        services.AddTransient<IProfileImporter, MultiMcImporter>();
+        services.AddTransient<IProfileImporter, PackwizImporter>();
+
+        services.AddTransient<IProfileExporter, TridentExporter>();
+        services.AddTransient<IProfileExporter, CurseForgeExporter>();
+        services.AddTransient<IProfileExporter, ModrinthExporter>();
+        services.AddTransient<IProfileExporter, MultiMcExporter>();
 
         services.AddSingleton<ProfileManager>();
         services.AddSingleton<RepositoryAgent>();
         services.AddSingleton<ImporterAgent>();
         services.AddSingleton<ExporterAgent>();
         services.AddSingleton<InstanceManager>();
-        services.AddSingleton<IRepositoryProviderAccessor>(_ => new PrismarineRepoProvider(curseForgeApiKey));
+        services.AddSingleton<IRepositoryProviderAccessor>(_ => new PrismarineRepoProvider(effectiveCfKey));
 
-        // Deploy pipeline stages
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.LoadLockStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.InstallVanillaStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.ProcessLoaderStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.SyncPackagesStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.FlattenPackagesStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.EnsureRuntimeStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.PersistLockStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.GenerateManifestStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.Stages.SolidifyManifestStage>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.PackagePlanner>();
-        services.AddTransient<TridentCore.Core.Engines.Deploying.PackageMaterializer>();
+        // Deploy pipeline services
+        services.AddTransient<PackagePlanner>();
+        services.AddTransient<ProjectionArbitrator>();
+        services.AddTransient<SourceProjectionPlanner>();
+        services.AddTransient<DeploymentPlanner>();
+        services.AddTransient<DeploymentDiffer>();
+        services.AddTransient<DeploymentIndexService>();
+        services.AddTransient<PackageResolver>();
+        services.AddTransient<PackageMaterializer>();
 
         _provider = services.BuildServiceProvider();
 
@@ -84,6 +117,15 @@ public static class TridentServices {
     }
 
     public static void Shutdown() {
+        if (_provider != null) {
+            try {
+                _provider.GetService<InstanceManager>()?.StopAsync().Wait(TimeSpan.FromSeconds(5));
+            }
+            catch {
+                // Best-effort detach/stop of running instances during shutdown
+            }
+        }
+
         _lifetime?.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
         _provider?.Dispose();
         _provider = null;
@@ -95,33 +137,18 @@ public static class TridentServices {
     public static RepositoryAgent RepositoryAgent => Get<RepositoryAgent>();
     public static ImporterAgent ImporterAgent => Get<ImporterAgent>();
     public static ExporterAgent ExporterAgent => Get<ExporterAgent>();
+    public static PrismLauncherService PrismLauncherService => Get<PrismLauncherService>();
 
-    public static JavaHomeLocatorDelegate DefaultJavaLocator => JavaHelper.MakeLocator(_ => null);
+    public static IReadOnlyList<(uint? Major, string Home)> DefaultJavaVault => PrismarineConfig.Instance.BuildJavaVault();
 
-    public static Task WaitForTrackerAsync(TrackerBase tracker) {
-        TaskCompletionSource tcs = new TaskCompletionSource();
-
-        if (tracker.State == TrackerState.Finished) {
-            tcs.TrySetResult();
-            return tcs.Task;
-        }
-
-        if (tracker.State == TrackerState.Faulted) {
-            tcs.TrySetException(tracker.FailureReason ?? new InvalidOperationException("Tracker faulted"));
-            return tcs.Task;
-        }
-
-        tracker.StateUpdated += (_,state) => {
-            switch (state) {
-                case TrackerState.Finished:
-                    tcs.TrySetResult();
-                    break;
-                case TrackerState.Faulted:
-                    tcs.TrySetException(tracker.FailureReason ?? new InvalidOperationException("Tracker faulted"));
-                    break;
-            }
+    public static async Task<InstanceActivity> WaitForActivityAsync(
+        IObservable<InstanceActivity> activities,
+        CancellationToken cancellationToken = default) {
+        InstanceActivity final = await activities.LastAsync().ToTask(cancellationToken).ConfigureAwait(false);
+        return final.State switch {
+            ActivityState.Faulted => throw final.FailureReason ?? new InvalidOperationException("Activity faulted"),
+            ActivityState.Cancelled => throw new OperationCanceledException("Activity cancelled"),
+            _ => final
         };
-
-        return tcs.Task;
     }
 }

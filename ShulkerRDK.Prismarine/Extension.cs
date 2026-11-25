@@ -7,6 +7,8 @@ public class Extension : ExtensionBase {
     public Extension() {
         Commands.Add("pfm", PfManager.Command);
         LevitateMethods.Add("pfm", PfManager.Method);
+        Commands.Add("inst", InstanceCommand.Command);
+        LevitateMethods.Add("inst", InstanceCommand.Method);
     }
 
     public override string Id { get => "shulker.prismarine"; }
