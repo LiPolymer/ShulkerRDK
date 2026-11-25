@@ -203,8 +203,26 @@ public static class InstanceService {
 
         incoming.Overrides ??= new Dictionary<string, object>();
 
+        string srcImport = Path.Combine(packDir, "import");
+        bool hasImport = Directory.Exists(srcImport);
+        bool alreadyExists = Exists(canonicalKey);
+
+        // 先完成源/目标导入目录的完整性预检，校验失败时不提交 profile 也不产生半写状态。
+        if (hasImport) {
+            try {
+                EnsureNoNestedReparsePoints(srcImport, "源");
+                if (alreadyExists) {
+                    EnsureNoNestedReparsePoints(PathDef.Default.DirectoryOfImport(canonicalKey), "目标");
+                }
+            }
+            catch (Exception ex) {
+                ct.WriteLine($"&c导入目录预检失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
+                return null;
+            }
+        }
+
         string actualKey = canonicalKey;
-        if (!Exists(canonicalKey)) {
+        if (!alreadyExists) {
             ReservedKey reserved = TridentServices.ProfileManager.RequestKey(canonicalKey);
             actualKey = reserved.Key;
             TridentServices.ProfileManager.Add(reserved, incoming);
@@ -219,12 +237,14 @@ public static class InstanceService {
             guard.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
-        string srcImport = Path.Combine(packDir, "import");
-        if (Directory.Exists(srcImport)) {
+        if (hasImport) {
             string destImport = PathDef.Default.DirectoryOfImport(actualKey);
+            List<string> changedRelFiles = [];
+            int propagated = 0;
             try {
-                MirrorStats stats = MirrorDirectory(srcImport, destImport, deleteStale: true);
-                int propagated = PropagateImportChangesToBuild(actualKey, destImport, stats.ChangedRelativePaths);
+                MirrorStats stats = MirrorDirectory(srcImport, destImport, deleteStale: true, changedSink: changedRelFiles);
+                propagated = PropagateImportChangesToBuild(actualKey, destImport, changedRelFiles);
+                changedRelFiles.Clear();
                 string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
                 ct.WriteLine(
                     $"&a已同步整合包 &8[&b{actualKey}&8] &7MC &b{incoming.Setup.Version} &8/ &b{LoaderResolver.FormatDisplay(incoming.Setup.Loader)} &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}&7 / 清理 &7{stats.Deleted}{buildNote}&8)");
@@ -232,6 +252,16 @@ public static class InstanceService {
             catch (Exception ex) {
                 ct.WriteLine($"&c同步导入目录失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
                 return null;
+            }
+            finally {
+                if (changedRelFiles.Count > 0) {
+                    try {
+                        PropagateImportChangesToBuild(actualKey, destImport, changedRelFiles);
+                    }
+                    catch {
+                        // 尽力将已写入 import 的文件同步到 build，避免重试时遗漏
+                    }
+                }
             }
         } else {
             ct.WriteLine(
@@ -262,9 +292,11 @@ public static class InstanceService {
         }
 
         string destImport = PathDef.Default.DirectoryOfImport(canonicalKey);
+        List<string> changedRelFiles = [];
         try {
-            MirrorStats stats = MirrorDirectory(srcDir, destImport, deleteStale: clean);
-            int propagated = PropagateImportChangesToBuild(canonicalKey, destImport, stats.ChangedRelativePaths);
+            MirrorStats stats = MirrorDirectory(srcDir, destImport, deleteStale: clean, changedSink: changedRelFiles);
+            int propagated = PropagateImportChangesToBuild(canonicalKey, destImport, changedRelFiles);
+            changedRelFiles.Clear();
             string buildNote = propagated > 0 ? $"&7 / 更新构建 &b{propagated}" : "";
             ct.WriteLine(
                 $"&a已同步导入目录 &8[&b{canonicalKey}&8] &8(&7复制 &b{stats.Copied}&7 / 跳过 &7{stats.Skipped}" +
@@ -274,6 +306,16 @@ public static class InstanceService {
         catch (Exception ex) {
             ct.WriteLine($"&c同步导入目录失败&8[&c{SanitizeForTerminal(ex.Message)}&8]", Terminal.MessageType.Error);
             return false;
+        }
+        finally {
+            if (changedRelFiles.Count > 0) {
+                try {
+                    PropagateImportChangesToBuild(canonicalKey, destImport, changedRelFiles);
+                }
+                catch {
+                    // 尽力将已写入 import 的文件同步到 build，避免重试时遗漏
+                }
+            }
         }
     }
 
@@ -1014,10 +1056,10 @@ public static class InstanceService {
         return true;
     }
 
-    static void EnsureNoNestedReparsePoints(string rootDir) {
+    static void EnsureNoNestedReparsePoints(string rootDir, string roleLabel = "目标") {
         string fullRoot = Path.GetFullPath(rootDir);
         if (IsReparsePointOrLink(fullRoot)) {
-            throw new InvalidDataException($"目标根目录不允许为符号链接或重解析点: {fullRoot}");
+            throw new InvalidDataException($"{roleLabel}根目录不允许为符号链接或重解析点: {fullRoot}");
         }
 
         if (!Directory.Exists(fullRoot)) return;
@@ -1027,7 +1069,7 @@ public static class InstanceService {
         while (pending.TryPop(out DirectoryInfo? dir)) {
             foreach (FileSystemInfo entry in dir.EnumerateFileSystemInfos()) {
                 if (IsReparsePointOrLink(entry)) {
-                    throw new InvalidDataException($"目标目录内不允许存在符号链接或重解析点: {entry.FullName}");
+                    throw new InvalidDataException($"{roleLabel}目录内不允许存在符号链接或重解析点: {entry.FullName}");
                 }
 
                 if (entry is DirectoryInfo subDir) {
@@ -1150,25 +1192,23 @@ public static class InstanceService {
         string srcDir,
         string destDir,
         bool deleteStale,
-        IReadOnlyCollection<string>? preserveFileNames = null) {
+        IReadOnlyCollection<string>? preserveFileNames = null,
+        List<string>? changedSink = null) {
         string fullSrcRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(srcDir));
         string fullDestRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destDir));
-
-        if (IsReparsePointOrLink(fullSrcRoot)) {
-            throw new InvalidDataException($"源根目录不允许为符号链接或重解析点: {fullSrcRoot}");
-        }
 
         if (File.Exists(fullDestRoot)) {
             throw new InvalidDataException($"目标目录路径被文件占用: {fullDestRoot}");
         }
 
-        // 先对目标子树做非跟随预检，存在任何符号链接/junction 时直接拒绝，不执行任何写入或删除。
-        EnsureNoNestedReparsePoints(fullDestRoot);
+        // 先对源子树和目标子树做完整非跟随预检，存在任何符号链接/junction 时直接拒绝，不产生任何半写状态。
+        EnsureNoNestedReparsePoints(fullSrcRoot, "源");
+        EnsureNoNestedReparsePoints(fullDestRoot, "目标");
         EnsureRealDirectoryChain(fullDestRoot, fullDestRoot);
 
         int copied = 0, skipped = 0, deleted = 0;
         HashSet<string> sourceRelFiles = new(FileHelper.PathComparer);
-        List<string> changedRelFiles = [];
+        List<string> changedRelFiles = changedSink ?? [];
         HashSet<string>? preserveSet = preserveFileNames != null
             ? new HashSet<string>(preserveFileNames, StringComparer.OrdinalIgnoreCase)
             : null;
